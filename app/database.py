@@ -26,64 +26,107 @@ class Base(DeclarativeBase):
 
 
 def _run_safe_migrations() -> None:
-    """Safe SQLite migration to add missing columns without dropping or losing data."""
-    if not settings.database_url.startswith("sqlite"):
-        return
+    """Safe migrations for SQLite and PostgreSQL to add missing columns/tables without data loss."""
+    is_sqlite = settings.database_url.startswith("sqlite")
 
     with engine.connect() as conn:
-        tables = [row[0] for row in conn.exec_driver_sql("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        if is_sqlite:
+            tables = [row[0] for row in conn.exec_driver_sql("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
 
-        if "leads" in tables:
-            lead_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(leads)").fetchall()}
-            if "source" not in lead_cols:
-                conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN source VARCHAR(40) DEFAULT 'FORM' NOT NULL")
-            if "session_id" not in lead_cols:
-                conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN session_id VARCHAR(80)")
-            if "location" not in lead_cols:
-                conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN location VARCHAR(255)")
-            if "requirements" not in lead_cols:
-                conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN requirements TEXT")
-            if "notes" not in lead_cols:
-                conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN notes TEXT")
+            if "chat_attachments" in tables:
+                chat_att_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(chat_attachments)").fetchall()}
+                if "data" not in chat_att_cols:
+                    conn.exec_driver_sql("ALTER TABLE chat_attachments ADD COLUMN data BLOB")
 
-        if "chat_messages" in tables:
-            chat_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(chat_messages)").fetchall()}
-            if "attachments" not in chat_cols:
-                conn.exec_driver_sql("ALTER TABLE chat_messages ADD COLUMN attachments TEXT")
-            if "client_message_id" not in chat_cols:
-                conn.exec_driver_sql("ALTER TABLE chat_messages ADD COLUMN client_message_id VARCHAR(120)")
-            if "status" not in chat_cols:
-                conn.exec_driver_sql("ALTER TABLE chat_messages ADD COLUMN status VARCHAR(40) DEFAULT 'SUCCESS' NOT NULL")
+            if "leads" in tables:
+                lead_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(leads)").fetchall()}
+                if "source" not in lead_cols:
+                    conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN source VARCHAR(40) DEFAULT 'FORM' NOT NULL")
+                if "session_id" not in lead_cols:
+                    conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN session_id VARCHAR(80)")
+                if "location" not in lead_cols:
+                    conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN location VARCHAR(255)")
+                if "requirements" not in lead_cols:
+                    conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN requirements TEXT")
+                if "notes" not in lead_cols:
+                    conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN notes TEXT")
 
-        if "conversations" in tables:
-            conversation_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(conversations)").fetchall()}
-            if "client_id" not in conversation_cols:
-                conn.exec_driver_sql("ALTER TABLE conversations ADD COLUMN client_id VARCHAR(80)")
-            if "title" not in conversation_cols:
-                conn.exec_driver_sql("ALTER TABLE conversations ADD COLUMN title VARCHAR(80) DEFAULT 'Cuộc trò chuyện mới' NOT NULL")
-            if "deleted_at" not in conversation_cols:
-                conn.exec_driver_sql("ALTER TABLE conversations ADD COLUMN deleted_at DATETIME")
+            if "chat_messages" in tables:
+                chat_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(chat_messages)").fetchall()}
+                if "attachments" not in chat_cols:
+                    conn.exec_driver_sql("ALTER TABLE chat_messages ADD COLUMN attachments TEXT")
+                if "client_message_id" not in chat_cols:
+                    conn.exec_driver_sql("ALTER TABLE chat_messages ADD COLUMN client_message_id VARCHAR(120)")
+                if "status" not in chat_cols:
+                    conn.exec_driver_sql("ALTER TABLE chat_messages ADD COLUMN status VARCHAR(40) DEFAULT 'SUCCESS' NOT NULL")
 
-        if "managed_services" in tables:
-            service_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(managed_services)").fetchall()}
-            if "hero_image" not in service_cols:
-                conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN hero_image VARCHAR(500)")
-            if "card_image" not in service_cols:
-                conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN card_image VARCHAR(500)")
-            if "content" not in service_cols:
-                conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN content TEXT")
-            if "scope_of_work" not in service_cols:
-                conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN scope_of_work TEXT")
-            if "process" not in service_cols:
-                conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN process TEXT")
-            if "benefits" not in service_cols:
-                conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN benefits TEXT")
-            if "faq" not in service_cols:
-                conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN faq TEXT")
-            if "seo_title" not in service_cols:
-                conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN seo_title VARCHAR(255)")
-            if "seo_description" not in service_cols:
-                conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN seo_description VARCHAR(500)")
+            if "conversations" in tables:
+                conversation_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(conversations)").fetchall()}
+                if "client_id" not in conversation_cols:
+                    conn.exec_driver_sql("ALTER TABLE conversations ADD COLUMN client_id VARCHAR(80)")
+                if "title" not in conversation_cols:
+                    conn.exec_driver_sql("ALTER TABLE conversations ADD COLUMN title VARCHAR(80) DEFAULT 'Cuộc trò chuyện mới' NOT NULL")
+                if "deleted_at" not in conversation_cols:
+                    conn.exec_driver_sql("ALTER TABLE conversations ADD COLUMN deleted_at DATETIME")
+
+            if "managed_services" in tables:
+                service_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(managed_services)").fetchall()}
+                if "hero_image" not in service_cols:
+                    conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN hero_image VARCHAR(500)")
+                if "card_image" not in service_cols:
+                    conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN card_image VARCHAR(500)")
+                if "content" not in service_cols:
+                    conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN content TEXT")
+                if "scope_of_work" not in service_cols:
+                    conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN scope_of_work TEXT")
+                if "process" not in service_cols:
+                    conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN process TEXT")
+                if "benefits" not in service_cols:
+                    conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN benefits TEXT")
+                if "faq" not in service_cols:
+                    conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN faq TEXT")
+                if "seo_title" not in service_cols:
+                    conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN seo_title VARCHAR(255)")
+                if "seo_description" not in service_cols:
+                    conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN seo_description VARCHAR(500)")
+
+            if "stored_media" not in tables:
+                conn.exec_driver_sql("""
+                    CREATE TABLE IF NOT EXISTS stored_media (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        key VARCHAR(160) NOT NULL UNIQUE,
+                        filename VARCHAR(255) NOT NULL,
+                        mime_type VARCHAR(60) NOT NULL DEFAULT 'image/webp',
+                        file_size INTEGER NOT NULL DEFAULT 0,
+                        width INTEGER,
+                        height INTEGER,
+                        data BLOB NOT NULL,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_stored_media_key ON stored_media (key)")
+        else:
+            # PostgreSQL (Neon) safe migrations
+            try:
+                conn.exec_driver_sql("""
+                    CREATE TABLE IF NOT EXISTS stored_media (
+                        id SERIAL PRIMARY KEY,
+                        key VARCHAR(160) NOT NULL UNIQUE,
+                        filename VARCHAR(255) NOT NULL,
+                        mime_type VARCHAR(60) NOT NULL DEFAULT 'image/webp',
+                        file_size INTEGER NOT NULL DEFAULT 0,
+                        width INTEGER,
+                        height INTEGER,
+                        data BYTEA NOT NULL,
+                        created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+                        updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+                    );
+                """)
+                conn.exec_driver_sql("CREATE INDEX IF NOT EXISTS ix_stored_media_key ON stored_media (key);")
+                conn.exec_driver_sql("ALTER TABLE chat_attachments ADD COLUMN IF NOT EXISTS data BYTEA;")
+            except Exception:
+                pass
 
         conn.commit()
 

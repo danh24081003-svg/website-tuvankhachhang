@@ -1,8 +1,9 @@
 import json
 import logging
-from fastapi import Depends, FastAPI, HTTPException, Request
+from pathlib import Path
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
@@ -11,7 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import BASE_DIR, get_settings
 from app.database import get_db, init_db
-from app.models import ManagedService, SiteImage, SiteSetting
+from app.models import ManagedService, SiteImage, SiteSetting, StoredMedia
 from app.routers import admin, ai, chat, leads, services
 from app.services.service_consultation_flows import normalize_slug
 
@@ -81,6 +82,30 @@ async def generic_exception_handler(request: Request, exc: Exception):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/media/{filename}")
+@app.get("/static/uploads/{filename}")
+def serve_media_file(filename: str, request: Request, db: Session = Depends(get_db)):
+    clean_filename = Path(filename).name
+    media = db.scalars(select(StoredMedia).where(StoredMedia.key == clean_filename)).first()
+    if media and media.data:
+        etag = f'W/"{media.id}-{media.file_size}-{int(media.updated_at.timestamp()) if media.updated_at else 0}"'
+        if request.headers.get("if-none-match") == etag:
+            return Response(status_code=304, headers={"ETag": etag, "Cache-Control": "public, max-age=31536000, immutable"})
+        return Response(
+            content=media.data,
+            media_type=media.mime_type or "image/webp",
+            headers={
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "ETag": etag,
+            },
+        )
+    # Check local filesystem fallback
+    local_path = BASE_DIR / "static" / "uploads" / clean_filename
+    if local_path.exists() and local_path.is_file():
+        return FileResponse(path=local_path)
+    raise HTTPException(status_code=404, detail="Không tìm thấy tập tin hình ảnh")
 
 
 @app.get("/", response_class=HTMLResponse)

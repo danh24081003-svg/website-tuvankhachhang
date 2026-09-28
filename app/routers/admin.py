@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.config import BASE_DIR, get_settings
 from app.database import get_db
-from app.models import AdminSession, AdminUser, ChatMessage, Customer, Lead, ManagedService, SiteImage, SiteSetting
+from app.models import AdminSession, AdminUser, ChatMessage, Customer, Lead, ManagedService, SiteImage, SiteSetting, StoredMedia
 from app.services.auth_service import clear_admin_session, create_admin_session, hash_token, require_admin, require_admin_with_csrf, verify_password
 from app.services.storage_service import get_storage_provider
 
@@ -229,8 +229,8 @@ async def admin_upload_image(
     image = db.scalars(select(SiteImage).where(SiteImage.key == image_key)).first()
     if not image:
         raise HTTPException(status_code=404, detail="Không tìm thấy vị trí ảnh")
-    provider = get_storage_provider()
-    stored = await provider.upload(file, prefix=image_key)
+    provider = get_storage_provider(db=db)
+    stored = await provider.upload(file, prefix=image_key, db=db)
     old_url = image.url
     try:
         image.filename = stored.filename
@@ -238,14 +238,14 @@ async def admin_upload_image(
         image.updated_at = datetime.utcnow()
         db.commit()
     except Exception:
-        provider.delete(stored.url)
+        provider.delete(stored.url, db=db)
         db.rollback()
         raise
     # Only delete old image if not default and not referenced by another key
     if old_url and old_url != image.default_url:
         other_use = db.scalar(select(func.count(SiteImage.id)).where(SiteImage.url == old_url, SiteImage.key != image_key)) or 0
         if other_use == 0:
-            provider.delete(old_url)
+            provider.delete(old_url, db=db)
     db.refresh(image)
     return image_out(image)
 
@@ -263,7 +263,7 @@ def admin_restore_image(image_key: str, db: Session = Depends(get_db), _: AdminU
     if old_url and old_url != image.default_url:
         other_use = db.scalar(select(func.count(SiteImage.id)).where(SiteImage.url == old_url, SiteImage.key != image_key)) or 0
         if other_use == 0:
-            get_storage_provider().delete(old_url)
+            get_storage_provider(db=db).delete(old_url, db=db)
     db.refresh(image)
     return image_out(image)
 
@@ -531,14 +531,30 @@ def admin_chat_detail(session_id: str, db: Session = Depends(get_db), _: AdminUs
 
 @router.get("/api/admin/media")
 def admin_media(db: Session = Depends(get_db), _: AdminUser = Depends(require_admin)):
-    upload_dir = Path(get_settings().upload_dir)
     used_urls = {item.url for item in db.scalars(select(SiteImage)).all()}
     used_urls.update(item.default_url for item in db.scalars(select(SiteImage)).all())
     items = []
+    seen_keys = set()
+
+    # 1. Database StoredMedia (Production Persistent Storage)
+    db_medias = db.scalars(select(StoredMedia).order_by(StoredMedia.created_at.desc())).all()
+    for m in db_medias:
+        url = f"/api/media/{m.key}"
+        seen_keys.add(m.key)
+        items.append({
+            "filename": m.key,
+            "url": url,
+            "size": m.file_size,
+            "in_use": url in used_urls or m.key in [Path(u.split('?')[0]).name for u in used_urls],
+        })
+
+    # 2. Local filesystem uploads (if present in local dev)
+    upload_dir = Path(get_settings().upload_dir)
     if upload_dir.exists():
         for file in sorted(upload_dir.iterdir(), key=lambda item: item.stat().st_mtime, reverse=True):
-            if file.is_file():
+            if file.is_file() and file.name not in seen_keys:
                 url = f"{get_settings().upload_url_prefix.rstrip('/')}/{file.name}"
+                seen_keys.add(file.name)
                 items.append({
                     "filename": file.name,
                     "url": url,
@@ -554,8 +570,8 @@ async def admin_upload_media(
     db: Session = Depends(get_db),
     _: AdminUser = Depends(require_admin_with_csrf),
 ):
-    provider = get_storage_provider()
-    stored = await provider.upload(file, prefix="media")
+    provider = get_storage_provider(db=db)
+    stored = await provider.upload(file, prefix="media", db=db)
     return {
         "filename": stored.filename,
         "url": stored.url,
@@ -570,10 +586,16 @@ def admin_delete_media(
     _: AdminUser = Depends(require_admin_with_csrf),
 ):
     settings = get_settings()
-    url = f"{settings.upload_url_prefix.rstrip('/')}/{filename}"
+    clean_name = Path(filename).name
+    url_media = f"/api/media/{clean_name}"
+    url_static = f"{settings.upload_url_prefix.rstrip('/')}/{clean_name}"
     in_use_count = db.scalar(
         select(func.count(SiteImage.id)).where(
-            (SiteImage.url == url) | (SiteImage.default_url == url)
+            (SiteImage.url == url_media)
+            | (SiteImage.default_url == url_media)
+            | (SiteImage.url == url_static)
+            | (SiteImage.default_url == url_static)
+            | (SiteImage.filename == clean_name)
         )
     ) or 0
     if in_use_count > 0:
@@ -581,7 +603,7 @@ def admin_delete_media(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Không thể xóa hình ảnh đang được website sử dụng.",
         )
-    provider = get_storage_provider()
-    provider.delete(url)
+    provider = get_storage_provider(db=db)
+    provider.delete(clean_name, db=db)
     return {"ok": True}
 
