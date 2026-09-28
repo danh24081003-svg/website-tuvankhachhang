@@ -114,3 +114,6 @@ scratch_hover/
 .tmp-chrome/
 .tmp-admin-tests/
 *.tmp
+
+.vercel
+.env*
