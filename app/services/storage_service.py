@@ -1,5 +1,6 @@
 import io
 import logging
+import os
 import secrets
 from dataclasses import dataclass
 from pathlib import Path
@@ -95,7 +96,10 @@ class StorageProvider:
 class LocalStorageProvider(StorageProvider):
     def __init__(self) -> None:
         settings = get_settings()
-        self.upload_dir = Path(settings.upload_dir)
+        if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+            self.upload_dir = Path("/tmp/static/uploads")
+        else:
+            self.upload_dir = Path(settings.upload_dir)
         self.url_prefix = settings.upload_url_prefix.rstrip("/")
         self.max_bytes = settings.upload_max_bytes
         try:

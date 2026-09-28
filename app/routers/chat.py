@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import time
 from collections import defaultdict, deque
 from datetime import datetime
@@ -34,7 +35,11 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 _request_log: dict[str, deque[float]] = defaultdict(deque)
 logger = logging.getLogger("uvicorn.error")
 SAFE_AI_MESSAGE = "Trợ lý đang tạm thời gián đoạn. Anh/chị vui lòng thử lại sau hoặc liên hệ 0901 040 484."
-CHAT_UPLOAD_DIR = BASE_DIR / "storage" / "chat_uploads"
+if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+    CHAT_UPLOAD_DIR = Path("/tmp/storage/chat_uploads")
+else:
+    CHAT_UPLOAD_DIR = BASE_DIR / "storage" / "chat_uploads"
+
 try:
     CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 except Exception:
