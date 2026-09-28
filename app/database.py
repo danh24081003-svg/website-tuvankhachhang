@@ -10,8 +10,12 @@ from app.services.default_service_data import DEFAULT_SERVICE_DETAILS
 
 settings = get_settings()
 
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-engine = create_engine(settings.database_url, connect_args=connect_args, pool_pre_ping=True)
+raw_db_url = settings.database_url
+if raw_db_url.startswith("postgres://"):
+    raw_db_url = raw_db_url.replace("postgres://", "postgresql://", 1)
+
+connect_args = {"check_same_thread": False} if raw_db_url.startswith("sqlite") else {}
+engine = create_engine(raw_db_url, connect_args=connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

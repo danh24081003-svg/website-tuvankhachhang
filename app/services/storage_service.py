@@ -98,7 +98,11 @@ class LocalStorageProvider(StorageProvider):
         self.upload_dir = Path(settings.upload_dir)
         self.url_prefix = settings.upload_url_prefix.rstrip("/")
         self.max_bytes = settings.upload_max_bytes
-        self.upload_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.upload_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            self.upload_dir = Path("/tmp/static/uploads")
+            self.upload_dir.mkdir(parents=True, exist_ok=True)
 
     async def upload(self, file: UploadFile, prefix: str = "site") -> StoredFile:
         content = await file.read()

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     gemini_timeout_ms: int = Field(default=30000, alias="GEMINI_TIMEOUT_MS")
     google_cloud_project: str | None = Field(default=None, alias="GOOGLE_CLOUD_PROJECT")
     google_cloud_location: str = Field(default="global", alias="GOOGLE_CLOUD_LOCATION")
+    google_credentials_json: str | None = Field(default=None, alias="GOOGLE_CREDENTIALS_JSON")
     vertex_model: str = Field(default="gemini-2.5-flash", alias="VERTEX_MODEL")
     database_url: str = Field(default=f"sqlite:///{(BASE_DIR / 'customer_ai.db').as_posix()}", alias="DATABASE_URL")
     allowed_origins: str = Field(default="http://127.0.0.1:8080,http://localhost:8080", alias="ALLOWED_ORIGINS")
