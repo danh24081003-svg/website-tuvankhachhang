@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ service.seo_description or service.short_description }}">
+    <title>{{ service.seo_title or (service.name ~ ' - Oshin Thời Đại') }}</title>
+    
+    <!-- Open Graph SEO -->
+    <meta property="og:title" content="{{ service.seo_title or (service.name ~ ' - Oshin Thời Đại') }}">
+    <meta property="og:description" content="{{ service.seo_description or service.short_description }}">
+    <meta property="og:image" content="{{ hero_image_url }}">
+    <meta property="og:type" content="article">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+  </head>
+  <body class="page-service-detail" data-current-page="service_detail" data-service-slug="{{ service.slug }}" data-service-name="{{ service.name }}">
+    <header class="site-header" data-site-header>
+      <div class="container header-inner">
+        <a class="brand" href="/" aria-label="Oshin Thời Đại">
+          <img src="/static/img/logo-shin-thoidai.png" alt="Oshin Thời Đại - Khẳng định sự thành đạt" class="brand-logo-img">
+          <span class="brand-fallback" style="display:none;">
+            <span class="brand-mark" aria-hidden="true">OT</span>
+            <span class="brand-copy">
+              <strong data-company-name>{{ company.brand_name or 'Oshin Thời Đại' }}</strong>
+              <em data-company-description>{{ company.slogan or 'Khẳng định sự thành đạt' }}</em>
+            </span>
+          </span>
+        </a>
+
+        <button class="mobile-menu-btn" type="button" aria-label="Mở menu" aria-expanded="false" data-menu-toggle>
+          <span></span><span></span><span></span>
+        </button>
+
+        <nav class="main-nav" data-main-nav>
+          <a href="/dich-vu" class="nav-link-dropdown">Dịch vụ <span class="nav-chevron" aria-hidden="true">▾</span></a>
+          <a href="/#about">Về chúng tôi</a>
+          <a href="/#process">Quy trình</a>
+          <a href="/#contact">Liên hệ</a>
+          <a class="nav-phone" href="tel:{{ (company.hotline or '0901 040 484') | replace(' ', '') }}" data-company-hotline>
+            <span class="nav-phone-icon" aria-hidden="true">📞</span>
+            <span data-company-hotline-text>{{ company.hotline or '0901 040 484' }}</span>
+          </a>
+          <a class="nav-cta" href="#consultation-form">Nhận tư vấn <span aria-hidden="true">→</span></a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <!-- SECTION 1: HERO & BREADCRUMB -->
+      <section class="service-hero">
+        <div class="container">
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="/">Trang chủ</a>
+            <span class="sep" aria-hidden="true">/</span>
+            <a href="/dich-vu">Dịch vụ</a>
+            <span class="sep" aria-hidden="true">/</span>
+            <span aria-current="page">{{ service.name }}</span>
+          </nav>
+
+          <div class="service-hero-grid">
+            <div class="service-hero-copy reveal">
+              <p class="eyebrow">— DỊCH VỤ CHUYÊN NGHIỆP • OSHIN THỜI ĐẠI</p>
+              <h1 class="service-hero-title">{{ service.name }}</h1>
+              <p class="service-hero-subtitle">{{ service.short_description }}</p>
+              <div class="service-hero-desc">
+                {{ service.description }}
+              </div>
+
+              <div class="service-hero-actions">
+                <button type="button" class="btn btn-gold btn-hero-pill" data-open-chat-service="{{ service.name }}">
+                  NHẬN TƯ VẤN <span aria-hidden="true">→</span>
+                </button>
+                <a class="btn btn-ghost btn-hero-pill" href="tel:{{ (company.hotline or '0901 040 484') | replace(' ', '') }}" data-company-hotline>
+                  📞 {{ company.hotline or '0901 040 484' }}
+                </a>
+              </div>
+
+              <div class="service-trust-tags">
+                <span>✓ Khảo sát tận nơi miễn phí</span>
+                <span>✓ Báo giá minh bạch</span>
+                <span>✓ Phục vụ 24/7</span>
+              </div>
+            </div>
+
+            <div class="service-hero-media reveal">
+              <div class="service-hero-frame">
+                <img src="{{ hero_image_url }}" alt="{{ service.name }} - Oshin Thời Đại" fetchpriority="high">
+                <div class="service-media-badge">
+                  <span class="badge-dot" aria-hidden="true"></span>
+                  <span>ĐỘI NGŨ CHUYÊN NGHIỆP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: GIỚI THIỆU CHI TIẾT DỊCH VỤ -->
+      <section class="section service-intro-section">
+        <div class="container service-intro-inner">
+          <div class="section-heading centered reveal">
+            <p class="eyebrow">— TỔNG QUAN GIẢI PHÁP</p>
+            <h2>Giới thiệu dịch vụ</h2>
+            <div class="gold-indicator" aria-hidden="true"></div>
+          </div>
+
+          <div class="service-intro-card reveal">
+            <div class="service-intro-text">
+              <p>{{ service.content or service.description }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: CÁC HẠNG MỤC / PHẠM VI CÔNG VIỆC -->
+      {% if scope_of_work and scope_of_work | length > 0 %}
+      <section class="section service-scope-section">
+        <div class="container">
+          <div class="section-heading centered reveal">
+            <p class="eyebrow">— PHẠM VI CÔNG VIỆC</p>
+            <h2>Các hạng mục triển khai</h2>
+            <p class="section-subheading">Đáp ứng linh hoạt và toàn diện mọi yêu cầu thực tế của quý khách hàng.</p>
+            <div class="gold-indicator" aria-hidden="true"></div>
+          </div>
+
+          <div class="scope-grid">
+            {% for item in scope_of_work %}
+            <article class="scope-card reveal">
+              <div class="scope-icon-wrap" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <p class="scope-text">{{ item }}</p>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- SECTION 4: QUY TRÌNH THỰC HIỆN -->
+      {% if process and process | length > 0 %}
+      <section class="process-section service-process-section">
+        <div class="container">
+          <div class="section-heading light centered reveal">
+            <p class="eyebrow">— QUY TRÌNH CHUẨN HÓA</p>
+            <h2>Quy trình thực hiện chuyên nghiệp</h2>
+            <p class="section-subheading" style="color: rgba(255,255,255,0.72);">5 bước rõ ràng đảm bảo tiến độ, chất lượng và sự an tâm tối đa.</p>
+          </div>
+
+          <div class="process-line service-process-line reveal">
+            {% for step in process %}
+            <article>
+              <span>{{ step.step }}</span>
+              <h3>{{ step.title }}</h3>
+              <p>{{ step.desc }}</p>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- SECTION 5: LỢI ÍCH / LÝ DO LỰA CHỌN -->
+      {% if benefits and benefits | length > 0 %}
+      <section class="section service-benefits-section">
+        <div class="container">
+          <div class="section-heading centered reveal">
+            <p class="eyebrow">— VÌ SAO CHỌN CHÚNG TÔI</p>
+            <h2>Lợi ích khi chọn Oshin Thời Đại</h2>
+            <div class="gold-indicator" aria-hidden="true"></div>
+          </div>
+
+          <div class="benefits-grid">
+            {% for item in benefits %}
+            <article class="benefit-card reveal">
+              <span class="benefit-number">0{{ loop.index }}</span>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.desc }}</p>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- SECTION 6: FAQ (CÂU HỎI THƯỜNG GẶP) -->
+      {% if faq and faq | length > 0 %}
+      <section class="section service-faq-section">
+        <div class="container service-faq-inner">
+          <div class="section-heading centered reveal">
+            <p class="eyebrow">— GIẢI ĐÁP THẮC MẮC</p>
+            <h2>Câu hỏi thường gặp</h2>
+            <div class="gold-indicator" aria-hidden="true"></div>
+          </div>
+
+          <div class="faq-accordion reveal">
+            {% for item in faq %}
+            <details class="faq-item" {% if loop.first %}open{% endif %}>
+              <summary class="faq-question">
+                <span>{{ item.q }}</span>
+                <span class="faq-chevron" aria-hidden="true">▾</span>
+              </summary>
+              <div class="faq-answer">
+                <p>{{ item.a }}</p>
+              </div>
+            </details>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      <!-- SECTION 7: CTA TƯ VẤN & FORM ĐĂNG KÝ -->
+      <section id="consultation-form" class="section contact-section service-contact-section">
+        <div class="container contact-inner">
+          <div class="contact-copy reveal">
+            <p class="eyebrow">— TIẾP NHẬN YÊU CẦU</p>
+            <h2>Bạn cần tư vấn chi tiết cho dịch vụ {{ service.name | lower }}?</h2>
+            <p>Để lại thông tin, đội ngũ Oshin Thời Đại sẽ liên hệ ngay để hỗ trợ khảo sát miễn phí và gửi phương án tối ưu nhất.</p>
+
+            <div class="contact-hotline-card">
+              <div class="hotline-icon-badge" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                </svg>
+              </div>
+              <div class="hotline-card-info">
+                <span class="hotline-card-label">CẦN HỖ TRỢ TRỰC TIẾP?</span>
+                <a class="hotline-card-phone" href="tel:{{ (company.hotline or '0901 040 484') | replace(' ', '') }}" data-company-hotline data-company-hotline-text>{{ company.hotline or '0901 040 484' }}</a>
+              </div>
+            </div>
+
+            <div style="margin-top: 24px;">
+              <button type="button" class="btn btn-outline" style="border-color: rgba(6, 59, 117, 0.2); color: var(--navy-950);" data-open-chat-service="{{ service.name }}">
+                💬 Trò chuyện với trợ lý AI ngay
+              </button>
+            </div>
+          </div>
+
+          <form class="lead-form reveal" data-lead-form>
+            <label>Họ và tên *
+              <input type="text" name="name" required placeholder="Nguyễn Văn A">
+            </label>
+            <label>Số điện thoại *
+              <input type="tel" name="phone" required placeholder="0901 040 484">
+            </label>
+            <label>Dịch vụ quan tâm *
+              <input type="text" name="service" value="{{ service.name }}" readonly style="background: rgba(1, 22, 43, 0.04); font-weight: 700;">
+            </label>
+            <label>Địa chỉ / khu vực *
+              <input type="text" name="address" required placeholder="Quận/Huyện, Tỉnh/TP">
+            </label>
+            <label>Nội dung yêu cầu *
+              <textarea name="message" rows="3" required placeholder="Mô tả nhu cầu, diện tích hoặc thời gian cần thực hiện..."></textarea>
+            </label>
+            <button class="btn btn-gold btn-lead-submit" type="submit">GỬI YÊU CẦU TƯ VẤN →</button>
+            <p class="form-status" data-lead-status></p>
+          </form>
+        </div>
+      </section>
+
+      <!-- SECTION 8: DỊCH VỤ LIÊN QUAN -->
+      {% if related_services and related_services | length > 0 %}
+      <section class="section service-related-section">
+        <div class="container">
+          <div class="section-heading centered reveal">
+            <p class="eyebrow">— CÁC GIẢI PHÁP KHÁC</p>
+            <h2>Dịch vụ liên quan</h2>
+            <div class="gold-indicator" aria-hidden="true"></div>
+          </div>
+
+          <div class="related-services-grid">
+            {% for rel in related_services %}
+            <article class="service-card reveal" style="min-height: 360px;">
+              <a href="/dich-vu/{{ rel.slug }}" style="display:flex; width:100%; height:100%; flex-direction:column; justify-content:flex-end;">
+                <div class="service-image">
+                  <img src="{{ rel.card_image or site_images[rel.image_key] or '/static/img/services/' ~ rel.slug ~ '.png' }}" alt="{{ rel.name }}" loading="lazy">
+                </div>
+                <div class="service-content">
+                  <h3 class="service-title">{{ rel.name }}</h3>
+                  <p class="service-desc">{{ rel.short_description }}</p>
+                  <span class="service-arrow" aria-hidden="true">Xem chi tiết →</span>
+                </div>
+              </a>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+    </main>
+
+    <!-- AI CHATBOT WIDGET -->
+    <button class="chat-cta-btn" type="button" aria-label="Mở chat tư vấn AI" data-chat-fab>
+      <span class="chat-cta-content">
+        <span class="chat-cta-icon-box" aria-hidden="true">
+          <svg class="chat-cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </span>
+        <span class="chat-cta-text">
+          <span class="chat-cta-heading">TƯ VẤN AI TRỰC TUYẾN</span>
+          <span class="chat-cta-sub">
+            <span class="chat-cta-live-dot" aria-hidden="true"></span>
+            <span>Hỗ trợ 24/7</span>
+            <span class="chat-cta-dot-sep">•</span>
+            <span>Phản hồi ngay</span>
+          </span>
+        </span>
+      </span>
+    </button>
+
+    <aside class="chat-widget" aria-live="polite" data-chat-widget hidden>
+      <div class="chat-header">
+        <div class="assistant-avatar">OT</div>
+        <div>
+          <strong>Trợ lý Oshin</strong>
+          <span><i class="status-dot"></i><span data-chat-status>Đang trực tuyến</span></span>
+        </div>
+        <div class="chat-header-actions">
+          <button class="chat-icon-btn" type="button" aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới" data-new-conversation>+</button>
+          <button class="chat-icon-btn chat-expand-btn" type="button" aria-label="Phóng to khung trò chuyện" title="Phóng to" data-toggle-expand>
+            <svg class="icon-maximize" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+            </svg>
+            <svg class="icon-minimize" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14L3 21"></path>
+            </svg>
+          </button>
+          <button class="chat-close-btn" type="button" aria-label="Đóng chat" title="Đóng chat" data-close-chat>×</button>
+        </div>
+      </div>
+      <div class="chat-messages" data-chat-messages></div>
+      <div class="quick-replies" data-quick-replies>
+        <button type="button">Nhận tư vấn</button>
+        <button type="button">Yêu cầu khảo sát</button>
+        <button type="button">Gặp nhân viên</button>
+        <button type="button">Dịch vụ khác</button>
+      </div>
+      <div class="chat-attachment-preview" data-chat-attachment-preview hidden></div>
+      <form class="chat-input" data-chat-form>
+        <input type="file" id="chat-file-input" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple style="display:none" data-chat-file-input>
+        <button type="button" class="chat-attach-btn" aria-label="Đính kèm hình ảnh" title="Gửi ảnh (tối đa 4 ảnh)" data-chat-attach-btn>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+          </svg>
+        </button>
+        <input type="text" name="message" autocomplete="off" maxlength="2000" placeholder="Nhập nội dung hoặc gửi ảnh..." data-chat-text-input>
+        <button type="submit" aria-label="Gửi tin nhắn">→</button>
+      </form>
+    </aside>
+
+    <div class="chat-lightbox" data-chat-lightbox hidden>
+      <button type="button" class="chat-lightbox-close" data-chat-lightbox-close aria-label="Đóng">×</button>
+      <img src="" alt="Xem ảnh" data-chat-lightbox-img>
+    </div>
+
+    <footer class="site-footer">
+      <div class="container footer-main">
+        <div class="footer-brand">
+          <a class="brand footer-logo" href="/" aria-label="Oshin Thời Đại">
+            <img src="/static/img/logo-shin-thoidai.png" alt="Oshin Thời Đại" class="brand-logo-img footer-logo-img">
+            <span class="brand-fallback" style="display:none;">
+              <span class="brand-mark" aria-hidden="true">OT</span>
+              <span class="brand-copy">
+                <strong data-company-name>{{ company.brand_name or 'Oshin Thời Đại' }}</strong>
+                <em data-company-description>{{ company.slogan or 'Khẳng định sự thành đạt' }}</em>
+              </span>
+            </span>
+          </a>
+          <p data-company-name-bottom>{{ company.company_name or 'CÔNG TY TNHH DỊCH VỤ OSHIN THỜI ĐẠI - ĐẤT PHƯƠNG NAM' }}</p>
+        </div>
+        <div>
+          <h3>Dịch vụ</h3>
+          <ul>
+            <li><a href="/dich-vu/van-chuyen-di-doi">Vận chuyển, di dời</a></li>
+            <li><a href="/dich-vu/ve-sinh-cong-nghiep">Vệ sinh công nghiệp</a></li>
+            <li><a href="/dich-vu/trang-tri-sua-chua">Trang trí, sửa chữa</a></li>
+            <li><a href="/dich-vu/cung-cap-quan-ly-lao-dong">Cung cấp nguồn lao động</a></li>
+            <li><a href="/dich-vu/giup-viec">Giúp việc theo giờ, định kỳ</a></li>
+            <li><a href="/dich-vu/cham-soc-cay-canh">Chăm sóc cây cảnh</a></li>
+            <li><a href="/dich-vu/diet-con-trung">Diệt côn trùng</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Liên kết nhanh</h3>
+          <ul>
+            <li><a href="/dich-vu">Tất cả dịch vụ</a></li>
+            <li><a href="/#about">Về chúng tôi</a></li>
+            <li><a href="/#process">Quy trình</a></li>
+            <li><a href="/#contact">Liên hệ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Liên hệ</h3>
+          <a class="footer-phone" href="tel:{{ (company.hotline or '0901 040 484') | replace(' ', '') }}" data-company-hotline>{{ company.hotline or '0901 040 484' }}</a>
+          {% if company.email %}<p data-company-email>{{ company.email }}</p>{% endif %}
+          {% if company.address %}<p data-company-address>{{ company.address }}</p>{% endif %}
+          {% if company.working_hours %}<p data-company-hours>{{ company.working_hours }}</p>{% endif %}
+        </div>
+      </div>
+      <div class="container footer-bottom">© <span data-company-name>{{ company.brand_name or 'Oshin Thời Đại' }}</span> - Đất Phương Nam.</div>
+    </footer>
+
+    <script src="/static/js/app.js" defer></script>
+  </body>
+</html>

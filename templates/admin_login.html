@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Đăng nhập quản trị - Oshin Thời Đại</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-card">
+        <div class="login-brand">
+          <span>OT</span>
+          <div>
+            <strong>Oshin Thời Đại</strong>
+            <small>Quản trị website</small>
+          </div>
+        </div>
+        <form data-login-form>
+          <label>Tên đăng nhập / Email<input name="email" type="text" autocomplete="username" required></label>
+          <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required></label>
+          <button type="submit">ĐĂNG NHẬP</button>
+          <p class="form-message" data-login-message role="status"></p>
+        </form>
+      </section>
+    </main>
+    <script src="/static/js/admin-login.js" defer></script>
+  </body>
+</html>

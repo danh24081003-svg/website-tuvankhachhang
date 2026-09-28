@@ -1,0 +1,86 @@
+[
+  {
+    "id": "van-chuyen-di-doi",
+    "name": "Vận chuyển, di dời",
+    "description": "Dịch vụ vận chuyển và di dời tài sản, vật dụng theo nhu cầu khách hàng.",
+    "icon": "truck",
+    "questions": [
+      "Anh/chị cần vận chuyển hoặc di dời những hạng mục nào?",
+      "Khối lượng/tài sản cần di dời khoảng bao nhiêu?",
+      "Địa điểm đi và địa điểm đến ở khu vực nào?",
+      "Thời gian mong muốn thực hiện là khi nào?"
+    ]
+  },
+  {
+    "id": "ve-sinh-cong-nghiep",
+    "name": "Vệ sinh công nghiệp",
+    "description": "Dịch vụ vệ sinh công nghiệp cho nhà ở, văn phòng, công trình và các khu vực theo yêu cầu.",
+    "icon": "sparkles",
+    "questions": [
+      "Diện tích cần vệ sinh khoảng bao nhiêu m²?",
+      "Loại hình cần vệ sinh là nhà ở, văn phòng, công trình hay khu vực khác?",
+      "Tình trạng hiện tại như thế nào?",
+      "Anh/chị có thể cung cấp hình ảnh hoặc video hiện trạng không?"
+    ]
+  },
+  {
+    "id": "trang-tri-sua-chua",
+    "name": "Trang trí, sửa chữa",
+    "description": "Cung cấp dịch vụ trang trí và sửa chữa theo nhu cầu của khách hàng.",
+    "icon": "wrench",
+    "questions": [
+      "Anh/chị cần trang trí hoặc sửa chữa hạng mục nào?",
+      "Tình trạng hiện tại ra sao?",
+      "Khu vực thực hiện ở đâu?",
+      "Anh/chị có hình ảnh hoặc video hiện trạng không?"
+    ]
+  },
+  {
+    "id": "cung-cap-quan-ly-lao-dong",
+    "name": "Cung cấp & quản lý nguồn lao động",
+    "description": "Cung cấp và quản lý nguồn lao động theo nhu cầu của khách hàng và doanh nghiệp.",
+    "icon": "users",
+    "questions": [
+      "Anh/chị cần số lượng lao động bao nhiêu?",
+      "Công việc chính cần nhân sự phụ trách là gì?",
+      "Thời gian làm việc theo ca, theo ngày hay định kỳ?",
+      "Địa điểm làm việc ở khu vực nào?"
+    ]
+  },
+  {
+    "id": "giup-viec",
+    "name": "Giúp việc theo giờ, định kỳ",
+    "description": "Dịch vụ giúp việc theo giờ hoặc định kỳ theo lịch của khách hàng.",
+    "icon": "home",
+    "questions": [
+      "Anh/chị cần giúp việc theo giờ hay định kỳ?",
+      "Các công việc cần hỗ trợ gồm những gì?",
+      "Lịch làm mong muốn như thế nào?",
+      "Khu vực thực hiện ở đâu?"
+    ]
+  },
+  {
+    "id": "cham-soc-cay-canh",
+    "name": "Chăm sóc cây cảnh",
+    "description": "Dịch vụ chăm sóc cây cảnh và khu vực cây xanh.",
+    "icon": "leaf",
+    "questions": [
+      "Anh/chị cần chăm sóc loại cây cảnh hoặc khu vực cây xanh nào?",
+      "Số lượng cây hoặc diện tích khu vực khoảng bao nhiêu?",
+      "Anh/chị cần làm một lần hay định kỳ?",
+      "Khu vực thực hiện ở đâu?"
+    ]
+  },
+  {
+    "id": "diet-con-trung",
+    "name": "Diệt côn trùng",
+    "description": "Dịch vụ xử lý và diệt côn trùng theo nhu cầu.",
+    "icon": "shield",
+    "questions": [
+      "Anh/chị cần xử lý loại côn trùng nào?",
+      "Khu vực cần xử lý là nhà ở, văn phòng, kho xưởng hay nơi khác?",
+      "Diện tích hoặc phạm vi cần xử lý khoảng bao nhiêu?",
+      "Tình trạng hiện tại nghiêm trọng ở mức nào?"
+    ]
+  }
+]

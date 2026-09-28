@@ -1,0 +1,116 @@
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+.env
+.env.*
+!.env.example
+*.env
+
+# ==========================================
+# Python & Bytecode
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ==========================================
+# Virtual Environments
+# ==========================================
+.venv/
+venv/
+env/
+ENV/
+.python/
+env.bak/
+venv.bak/
+
+# ==========================================
+# Testing, Coverage & Caches
+# ==========================================
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+.hypothesis/
+
+# ==========================================
+# IDEs, Editors & OS Files
+# ==========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+desktop.ini
+
+# ==========================================
+# Logs
+# ==========================================
+*.log
+logs/
+
+# ==========================================
+# Google Cloud & Security Credentials
+# ==========================================
+credentials*.json
+service-account*.json
+*service_account*.json
+*.pem
+*.key
+*.crt
+
+# ==========================================
+# Databases & Local SQLite
+# ==========================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ==========================================
+# Customer Uploads (Privacy Protected)
+# ==========================================
+storage/chat_uploads/*
+!storage/chat_uploads/.gitkeep
+
+# ==========================================
+# Admin Runtime Uploads (Persistent Storage)
+# ==========================================
+static/uploads/*
+!static/uploads/.gitkeep
+
+# ==========================================
+# Temporary / Scratch Test Artifacts
+# ==========================================
+scratch/
+scratch_screenshots/
+scratch_hover/
+.tmp-chrome/
+.tmp-admin-tests/
+*.tmp

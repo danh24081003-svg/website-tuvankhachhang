@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin - Oshin Thời Đại</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/admin.css">
+  </head>
+  <body>
+    <div class="admin-app">
+      <div class="sidebar-backdrop" data-sidebar-backdrop hidden></div>
+      <aside class="admin-sidebar" data-sidebar>
+        <a class="admin-logo" href="/admin">
+          <span>OT</span>
+          <strong>Oshin Thời Đại</strong>
+        </a>
+        <nav>
+          <a href="/admin" data-nav="overview">Tổng quan</a>
+          <a href="/admin/images" data-nav="images">Hình ảnh</a>
+          <a href="/admin/services" data-nav="services">Dịch vụ</a>
+          <a href="/admin/content" data-nav="content">Nội dung website</a>
+          <a href="/admin/leads" data-nav="leads">Yêu cầu tư vấn</a>
+          <a href="/admin/chats" data-nav="chats">Chat / Hội thoại</a>
+          <a href="/admin/company" data-nav="company">Thông tin công ty</a>
+          <a href="/admin/media" data-nav="media">Media library</a>
+          <a href="/admin/settings" data-nav="settings">Cài đặt</a>
+        </nav>
+        <button class="logout-btn" type="button" data-logout>Đăng xuất</button>
+      </aside>
+      <main class="admin-main">
+        <header class="admin-topbar">
+          <button class="menu-btn" type="button" data-menu-toggle aria-label="Menu">☰</button>
+          <div>
+            <h1 data-page-title>Dashboard</h1>
+            <p data-admin-email></p>
+          </div>
+          <div class="topbar-actions">
+            <a href="/" target="_blank" rel="noopener" class="preview-site-link">Xem Website ↗</a>
+          </div>
+        </header>
+        <section class="admin-content" data-admin-content></section>
+      </main>
+    </div>
+    <div class="toast" data-toast hidden></div>
+    <div class="media-lightbox" data-lightbox hidden>
+      <div class="lightbox-content">
+        <button class="lightbox-close" data-lightbox-close>×</button>
+        <img data-lightbox-img src="" alt="Preview">
+      </div>
+    </div>
+    <script src="/static/js/admin.js" defer></script>
+  </body>
+</html>
+
