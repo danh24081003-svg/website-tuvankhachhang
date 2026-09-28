@@ -1,0 +1,27 @@
+# Vercel ignore file
+.env*
+!.env.example
+.python/
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.tmp-chrome/
+.tmp-admin-tests/
+scratch/
+scratch_screenshots/
+scratch_hover/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+storage/chat_uploads/*
+!storage/chat_uploads/.gitkeep
+static/uploads/*
+!static/uploads/.gitkeep
+.git/
+.vscode/
+.idea/
