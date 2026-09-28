@@ -1,3 +1,4 @@
+import logging
 import sys
 from pathlib import Path
 
@@ -7,17 +8,34 @@ if str(ROOT_DIR) not in sys.path:
 
 from app.main import app as _app  # noqa: E402
 
+logger = logging.getLogger("uvicorn.error")
+
 async def app(scope, receive, send):
     if scope.get("type") == "http":
         headers = dict(scope.get("headers", []))
-        # Vercel supplies the original requested URI in x-matched-path
-        matched_path = headers.get(b"x-matched-path", b"").decode("latin-1")
-        if matched_path:
-            clean_path = matched_path.split("?")[0].split("#")[0]
-            scope["path"] = clean_path
-            scope["raw_path"] = clean_path.encode("latin-1")
-        elif scope.get("path", "").startswith("/api/index.py"):
-            new_path = scope["path"][len("/api/index.py"):]
-            scope["path"] = new_path if new_path.startswith("/") else ("/" + new_path if new_path else "/")
-            scope["raw_path"] = scope["path"].encode("latin-1")
+        raw_headers = {k.decode('latin-1'): v.decode('latin-1') for k, v in headers.items()}
+        logger.info("VERCEL_SCOPE_PATH: %s", scope.get("path"))
+        logger.info("VERCEL_HEADERS: %s", raw_headers)
+
+        # Check for original URL headers
+        original_uri = (
+            raw_headers.get("x-vercel-matched-path")
+            or raw_headers.get("x-now-route-matches")
+            or raw_headers.get("x-forwarded-uri")
+            or raw_headers.get("x-forwarded-path")
+            or scope.get("path", "")
+        )
+
+        # If path ends up as /api/index.py or starts with /api/index.py, strip it
+        if original_uri.startswith("/api/index.py"):
+            original_uri = original_uri[len("/api/index.py"):]
+
+        clean_path = (original_uri.split("?")[0].split("#")[0]).strip()
+        if not clean_path.startswith("/"):
+            clean_path = "/" + clean_path
+
+        logger.info("RESOLVED_PATH: %s", clean_path)
+        scope["path"] = clean_path
+        scope["raw_path"] = clean_path.encode("latin-1")
+
     await _app(scope, receive, send)
