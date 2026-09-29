@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, inspect, select, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import BASE_DIR, get_settings
@@ -26,15 +26,13 @@ class Base(DeclarativeBase):
 
 
 def _run_safe_migrations() -> None:
-    """Safe SQLite migration to add missing columns without dropping or losing data."""
-    if not settings.database_url.startswith("sqlite"):
-        return
-
+    """Safe additive migrations without dropping or losing data."""
     with engine.connect() as conn:
-        tables = [row[0] for row in conn.exec_driver_sql("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        inspector = inspect(conn)
+        tables = inspector.get_table_names()
 
         if "leads" in tables:
-            lead_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(leads)").fetchall()}
+            lead_cols = {col["name"] for col in inspector.get_columns("leads")}
             if "source" not in lead_cols:
                 conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN source VARCHAR(40) DEFAULT 'FORM' NOT NULL")
             if "session_id" not in lead_cols:
@@ -47,7 +45,9 @@ def _run_safe_migrations() -> None:
                 conn.exec_driver_sql("ALTER TABLE leads ADD COLUMN notes TEXT")
 
         if "chat_messages" in tables:
-            chat_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(chat_messages)").fetchall()}
+            chat_cols = {col["name"] for col in inspector.get_columns("chat_messages")}
+            if "conversation_id" not in chat_cols:
+                conn.exec_driver_sql("ALTER TABLE chat_messages ADD COLUMN conversation_id INTEGER")
             if "attachments" not in chat_cols:
                 conn.exec_driver_sql("ALTER TABLE chat_messages ADD COLUMN attachments TEXT")
             if "client_message_id" not in chat_cols:
@@ -56,7 +56,7 @@ def _run_safe_migrations() -> None:
                 conn.exec_driver_sql("ALTER TABLE chat_messages ADD COLUMN status VARCHAR(40) DEFAULT 'SUCCESS' NOT NULL")
 
         if "conversations" in tables:
-            conversation_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(conversations)").fetchall()}
+            conversation_cols = {col["name"] for col in inspector.get_columns("conversations")}
             if "client_id" not in conversation_cols:
                 conn.exec_driver_sql("ALTER TABLE conversations ADD COLUMN client_id VARCHAR(80)")
             if "title" not in conversation_cols:
@@ -65,7 +65,7 @@ def _run_safe_migrations() -> None:
                 conn.exec_driver_sql("ALTER TABLE conversations ADD COLUMN deleted_at DATETIME")
 
         if "managed_services" in tables:
-            service_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(managed_services)").fetchall()}
+            service_cols = {col["name"] for col in inspector.get_columns("managed_services")}
             if "hero_image" not in service_cols:
                 conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN hero_image VARCHAR(500)")
             if "card_image" not in service_cols:
@@ -85,6 +85,27 @@ def _run_safe_migrations() -> None:
             if "seo_description" not in service_cols:
                 conn.exec_driver_sql("ALTER TABLE managed_services ADD COLUMN seo_description VARCHAR(500)")
 
+        if "chat_attachments" in tables:
+            attachment_cols = {col["name"] for col in inspector.get_columns("chat_attachments")}
+            if "data" not in attachment_cols:
+                conn.exec_driver_sql("ALTER TABLE chat_attachments ADD COLUMN data BYTEA" if not db_url.startswith("sqlite") else "ALTER TABLE chat_attachments ADD COLUMN data BLOB")
+
+        if "chat_messages" in tables and "conversations" in tables:
+            conn.execute(
+                text(
+                    """
+                    UPDATE chat_messages
+                    SET conversation_id = (
+                        SELECT conversations.id
+                        FROM conversations
+                        WHERE conversations.session_id = chat_messages.session_id
+                        LIMIT 1
+                    )
+                    WHERE conversation_id IS NULL
+                    """
+                )
+            )
+
         conn.commit()
 
 
@@ -98,14 +119,9 @@ def init_db() -> None:
 
 
 def _load_json(filename: str):
-    try:
-        path = BASE_DIR / "data" / filename
-        if path.exists() and path.is_file():
-            with path.open("r", encoding="utf-8") as file:
-                return json.load(file)
-    except Exception:
-        pass
-    return {} if filename.endswith("company.json") else []
+    path = BASE_DIR / "data" / filename
+    with path.open("r", encoding="utf-8") as file:
+        return json.load(file)
 
 
 def seed_initial_site_data(db: Session, models_module) -> None:

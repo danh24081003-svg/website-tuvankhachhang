@@ -1,4 +1,3 @@
-import os
 import time
 from collections import defaultdict, deque
 from datetime import datetime
@@ -13,8 +12,8 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.config import BASE_DIR, get_settings
 from app.database import get_db
-from app.models import AdminSession, AdminUser, ChatMessage, Customer, Lead, ManagedService, SiteImage, SiteSetting, StoredMedia
-from app.services.auth_service import clear_admin_session, create_admin_session, hash_password, hash_token, require_admin, require_admin_with_csrf, verify_password
+from app.models import AdminSession, AdminUser, ChatAttachment, ChatMessage, Conversation, Customer, Lead, ManagedService, SiteImage, SiteSetting, StoredMedia
+from app.services.auth_service import clear_admin_session, create_admin_session, hash_token, require_admin, require_admin_with_csrf, verify_password
 from app.services.storage_service import get_storage_provider
 
 
@@ -32,6 +31,14 @@ LEAD_STATUSES = {
     "completed",
     "cancelled",
 }
+
+TEST_CHAT_SESSION_PREFIXES = (
+    "matrix-session-",
+    "live-test-session-",
+    "live-test-8080-session",
+    "test-session-",
+    "test-ai-session-",
+)
 
 
 class LoginPayload(BaseModel):
@@ -155,6 +162,22 @@ def lead_out(lead: Lead) -> dict:
     }
 
 
+def _is_test_chat_session(session_id: str) -> bool:
+    return any((session_id or "").startswith(prefix) for prefix in TEST_CHAT_SESSION_PREFIXES)
+
+
+def _chat_attachment_out(att: ChatAttachment) -> dict:
+    return {
+        "id": att.id,
+        "url": f"/api/chat/attachments/{att.id}",
+        "filename": att.filename,
+        "file_size": att.file_size,
+        "width": att.width,
+        "height": att.height,
+        "created_at": att.created_at.isoformat() if att.created_at else None,
+    }
+
+
 @router.get("/admin/login", response_class=HTMLResponse)
 def admin_login_page(request: Request, db: Session = Depends(get_db)):
     if _admin_logged_in(request, db):
@@ -173,22 +196,7 @@ def admin_page(request: Request, path: str = "", db: Session = Depends(get_db)):
 @router.post("/api/admin/auth/login")
 def admin_login(payload: LoginPayload, request: Request, response: Response, db: Session = Depends(get_db)):
     _rate_limit_login(request)
-    raw_email = payload.email.strip().lower()
-    
-    # Check if admin table is empty, auto-seed default admin
-    admin_count = db.scalar(select(func.count(AdminUser.id))) or 0
-    if admin_count == 0:
-        default_email = os.getenv("ADMIN_EMAIL", "admin@oshin.vn").strip().lower()
-        default_pwd = os.getenv("ADMIN_PASSWORD", "Admin@123456")
-        db.add(AdminUser(email=default_email, password_hash=hash_password(default_pwd), is_active=True))
-        db.commit()
-
-    user = db.scalars(
-        select(AdminUser).where(
-            (AdminUser.email == raw_email)
-            | (AdminUser.email == f"{raw_email}@oshin.vn")
-        )
-    ).first()
+    user = db.scalars(select(AdminUser).where(AdminUser.email == payload.email.strip().lower())).first()
     if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Thông tin đăng nhập không đúng")
     create_admin_session(db, user, response)
@@ -512,33 +520,68 @@ def admin_update_lead_status(
 def admin_chats(db: Session = Depends(get_db), _: AdminUser = Depends(require_admin)):
     rows = db.execute(
         select(
-            ChatMessage.session_id,
+            Conversation.id.label("conversation_id"),
+            Conversation.session_id,
+            Conversation.title,
+            Conversation.status,
+            Conversation.service_slug,
+            Conversation.created_at,
+            Conversation.updated_at,
             func.count(ChatMessage.id).label("message_count"),
             func.max(ChatMessage.created_at).label("last_message_at"),
         )
-        .group_by(ChatMessage.session_id)
-        .order_by(func.max(ChatMessage.created_at).desc())
+        .join(ChatMessage, ChatMessage.conversation_id == Conversation.id, isouter=True)
+        .where(Conversation.deleted_at.is_(None))
+        .group_by(Conversation.id)
+        .order_by(func.coalesce(func.max(ChatMessage.created_at), Conversation.updated_at).desc())
         .limit(200)
     ).all()
     return [
         {
+            "conversation_id": row.conversation_id,
             "session_id": row.session_id,
+            "title": row.title,
+            "status": row.status,
+            "service_slug": row.service_slug,
             "message_count": row.message_count,
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+            "updated_at": row.updated_at.isoformat() if row.updated_at else None,
             "last_message_at": row.last_message_at.isoformat() if row.last_message_at else None,
         }
         for row in rows
+        if not _is_test_chat_session(row.session_id)
     ]
 
 
 @router.get("/api/admin/chats/{session_id}")
 def admin_chat_detail(session_id: str, db: Session = Depends(get_db), _: AdminUser = Depends(require_admin)):
-    messages = db.scalars(select(ChatMessage).where(ChatMessage.session_id == session_id).order_by(ChatMessage.created_at.asc())).all()
+    conversation = db.scalars(select(Conversation).where(Conversation.session_id == session_id)).first()
+    if not conversation or conversation.deleted_at is not None or _is_test_chat_session(session_id):
+        raise HTTPException(status_code=404, detail="KhÃ´ng tÃ¬m tháº¥y há»™i thoáº¡i")
+    messages = db.scalars(
+        select(ChatMessage)
+        .where(ChatMessage.conversation_id == conversation.id)
+        .order_by(ChatMessage.created_at.asc(), ChatMessage.id.asc())
+    ).all()
+    attachments_by_message: dict[int, list[dict]] = {}
+    if messages:
+        message_ids = [m.id for m in messages]
+        attachments = db.scalars(
+            select(ChatAttachment)
+            .where(ChatAttachment.message_id.in_(message_ids))
+            .order_by(ChatAttachment.created_at.asc(), ChatAttachment.id.asc())
+        ).all()
+        for att in attachments:
+            if att.message_id:
+                attachments_by_message.setdefault(att.message_id, []).append(_chat_attachment_out(att))
     return [
         {
             "id": item.id,
+            "conversation_id": item.conversation_id,
             "session_id": item.session_id,
             "role": item.role,
             "message": item.message,
+            "attachments": attachments_by_message.get(item.id, []),
             "created_at": item.created_at.isoformat(),
         }
         for item in messages

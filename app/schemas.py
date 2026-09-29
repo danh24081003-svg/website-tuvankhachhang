@@ -50,6 +50,7 @@ class ChatResponse(BaseModel):
 class ChatMessageOut(BaseModel):
     id: int
     session_id: str
+    conversation_id: int | None = None
     client_message_id: str | None = None
     role: str
     message: str

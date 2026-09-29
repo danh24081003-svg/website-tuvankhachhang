@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile, status
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func, select
@@ -34,17 +34,8 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 _request_log: dict[str, deque[float]] = defaultdict(deque)
 logger = logging.getLogger("uvicorn.error")
 SAFE_AI_MESSAGE = "Trợ lý đang tạm thời gián đoạn. Anh/chị vui lòng thử lại sau hoặc liên hệ 0901 040 484."
-import tempfile
-
 CHAT_UPLOAD_DIR = BASE_DIR / "storage" / "chat_uploads"
-try:
-    CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-except Exception:
-    CHAT_UPLOAD_DIR = Path(tempfile.gettempdir()) / "chat_uploads"
-    try:
-        CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    except Exception:
-        pass
+CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _client_key(request: Request, session_id: str) -> str:
@@ -169,6 +160,7 @@ def _format_message_out(message: ChatMessage) -> ChatMessageOut:
     return ChatMessageOut(
         id=message.id,
         session_id=message.session_id,
+        conversation_id=message.conversation_id,
         client_message_id=message.client_message_id,
         role=message.role,
         message=message.message,
@@ -216,6 +208,7 @@ async def upload_chat_images(
             client_id=c_id,
             filename=file.filename or filename,
             storage_path=str(target_path),
+            data=optimized_bytes,
             mime_type=f"image/{ext}",
             file_size=len(optimized_bytes),
             width=w,
@@ -267,6 +260,8 @@ def get_chat_attachment(
         raise HTTPException(status_code=403, detail="Không có quyền truy cập hình ảnh này.")
 
     path = Path(att.storage_path)
+    if (not path.exists() or not path.is_file()) and att.data:
+        return Response(content=att.data, media_type=att.mime_type or "image/webp")
     if not path.exists() or not path.is_file():
         raise HTTPException(status_code=404, detail="File ảnh không tìm thấy trên hệ thống lưu trữ.")
 
@@ -375,6 +370,7 @@ async def chat(
     if not user_message:
         user_message = ChatMessage(
             session_id=payload.session_id,
+            conversation_id=conversation.id,
             client_message_id=payload.client_message_id,
             role="user",
             message=effective_user_text,
@@ -384,8 +380,11 @@ async def chat(
         db.add(user_message)
         if conversation.title == "Cuộc trò chuyện mới":
             conversation.title = _conversation_title_from_message(payload.message or "Gửi ảnh tư vấn")
+        conversation.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(user_message)
+    elif not user_message.conversation_id:
+        user_message.conversation_id = conversation.id
 
     # Associate attachments with conversation and message
     for att in attachment_records:
@@ -462,6 +461,8 @@ async def chat(
         path = Path(att.storage_path)
         if path.exists() and path.is_file() and path.stat().st_size > 0:
             image_bytes_list.append(path.read_bytes())
+        elif att.data:
+            image_bytes_list.append(att.data)
 
     # Generate reply
     history = db.scalars(
@@ -490,8 +491,15 @@ async def chat(
         return _error_response(500, "DATABASE_ERROR", "Hệ thống đang tạm thời gián đoạn. Anh/chị vui lòng thử lại sau.")
 
     # 6. Save assistant message
-    assistant_message = ChatMessage(session_id=payload.session_id, role="assistant", message=reply, status="SUCCESS")
+    assistant_message = ChatMessage(
+        session_id=payload.session_id,
+        conversation_id=conversation.id,
+        role="assistant",
+        message=reply,
+        status="SUCCESS",
+    )
     db.add(assistant_message)
+    conversation.updated_at = datetime.utcnow()
     db.commit()
 
     return ChatResponse(

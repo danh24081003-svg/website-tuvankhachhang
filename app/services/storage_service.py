@@ -406,10 +406,7 @@ def get_storage_provider(db: "Session | None" = None) -> StorageProvider:
         return GoogleCloudStorageProvider()
     # Check if explicitly configured for local filesystem
     if settings.upload_storage.lower() == "local" and not os.environ.get("VERCEL"):
-        try:
-            (BASE_DIR / "static" / "uploads").mkdir(parents=True, exist_ok=True)
-        except Exception:
-            pass
+        (BASE_DIR / "static" / "uploads").mkdir(parents=True, exist_ok=True)
         return LocalStorageProvider()
     # Default: DatabaseStorageProvider (Neon PostgreSQL / SQLite persistent storage)
     return DatabaseStorageProvider(db=db)

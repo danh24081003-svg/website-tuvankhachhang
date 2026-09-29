@@ -71,6 +71,19 @@ function escapeHtml(value) {
   }[char]));
 }
 
+function renderChatAttachments(attachments = []) {
+  if (!attachments || attachments.length === 0) return "";
+  return `
+    <div class="chat-admin-attachments" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      ${attachments.map((att) => `
+        <button type="button" data-lightbox-trigger="${escapeHtml(att.url)}" style="border:0;background:transparent;padding:0;cursor:pointer">
+          <img src="${escapeHtml(att.url)}" alt="${escapeHtml(att.filename || "Ảnh khách gửi")}" loading="lazy" style="width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line)">
+        </button>
+      `).join("")}
+    </div>
+  `;
+}
+
 function setTitle(text) {
   if (title) title.textContent = text;
   document.querySelectorAll("[data-nav]").forEach((item) => {
@@ -919,6 +932,7 @@ async function renderLeadDetail(id) {
             <div class="bubble ${m.role === "user" ? "user" : "assistant"}" style="margin-bottom:10px">
               <strong>${m.role === "user" ? "👤 KHÁCH HÀNG" : "🤖 TRỢ LÝ OSHIN"}</strong>
               <div style="margin-top:4px">${escapeHtml(m.message)}</div>
+              ${renderChatAttachments(m.attachments)}
               <small style="color:var(--muted);font-size:0.75rem">${new Date(m.created_at).toLocaleTimeString("vi-VN")} ${new Date(m.created_at).toLocaleDateString("vi-VN")}</small>
             </div>
           `).join("")}
@@ -1084,6 +1098,7 @@ async function renderChatDetail(sessionId) {
             <div class="bubble ${m.role === "user" ? "user" : "assistant"}">
               <strong>${m.role === "user" ? "👤 KHÁCH HÀNG" : "🤖 TRỢ LÝ OSHIN"}</strong>
               <div style="margin-top:4px">${escapeHtml(m.message)}</div>
+              ${renderChatAttachments(m.attachments)}
               <small>${new Date(m.created_at).toLocaleTimeString("vi-VN")} • ${new Date(m.created_at).toLocaleDateString("vi-VN")}</small>
             </div>
           `).join("")}
@@ -1091,6 +1106,10 @@ async function renderChatDetail(sessionId) {
       </div>
     </section>
   `;
+
+  document.querySelectorAll("[data-lightbox-trigger]").forEach((el) => {
+    el.addEventListener("click", () => openLightbox(el.dataset.lightboxTrigger));
+  });
 }
 
 // ==================================================

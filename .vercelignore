@@ -8,6 +8,7 @@ scratch_*
 .env.*
 scripts
 tests
+data
 *.db
 *.sqlite
 *.sqlite3
