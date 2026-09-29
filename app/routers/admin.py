@@ -1,3 +1,4 @@
+import os
 import time
 from collections import defaultdict, deque
 from datetime import datetime
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.config import BASE_DIR, get_settings
 from app.database import get_db
 from app.models import AdminSession, AdminUser, ChatMessage, Customer, Lead, ManagedService, SiteImage, SiteSetting, StoredMedia
-from app.services.auth_service import clear_admin_session, create_admin_session, hash_token, require_admin, require_admin_with_csrf, verify_password
+from app.services.auth_service import clear_admin_session, create_admin_session, hash_password, hash_token, require_admin, require_admin_with_csrf, verify_password
 from app.services.storage_service import get_storage_provider
 
 
@@ -172,7 +173,22 @@ def admin_page(request: Request, path: str = "", db: Session = Depends(get_db)):
 @router.post("/api/admin/auth/login")
 def admin_login(payload: LoginPayload, request: Request, response: Response, db: Session = Depends(get_db)):
     _rate_limit_login(request)
-    user = db.scalars(select(AdminUser).where(AdminUser.email == payload.email.strip().lower())).first()
+    raw_email = payload.email.strip().lower()
+    
+    # Check if admin table is empty, auto-seed default admin
+    admin_count = db.scalar(select(func.count(AdminUser.id))) or 0
+    if admin_count == 0:
+        default_email = os.getenv("ADMIN_EMAIL", "admin@oshin.vn").strip().lower()
+        default_pwd = os.getenv("ADMIN_PASSWORD", "Admin@123456")
+        db.add(AdminUser(email=default_email, password_hash=hash_password(default_pwd), is_active=True))
+        db.commit()
+
+    user = db.scalars(
+        select(AdminUser).where(
+            (AdminUser.email == raw_email)
+            | (AdminUser.email == f"{raw_email}@oshin.vn")
+        )
+    ).first()
     if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Thông tin đăng nhập không đúng")
     create_admin_session(db, user, response)

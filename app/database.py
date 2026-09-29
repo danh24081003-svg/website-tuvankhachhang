@@ -98,14 +98,9 @@ def init_db() -> None:
 
 
 def _load_json(filename: str):
-    try:
-        path = BASE_DIR / "data" / filename
-        if path.exists() and path.is_file():
-            with path.open("r", encoding="utf-8") as file:
-                return json.load(file)
-    except Exception:
-        pass
-    return {} if filename.endswith("company.json") else []
+    path = BASE_DIR / "data" / filename
+    with path.open("r", encoding="utf-8") as file:
+        return json.load(file)
 
 
 def seed_initial_site_data(db: Session, models_module) -> None:
@@ -205,6 +200,23 @@ def seed_initial_site_data(db: Session, models_module) -> None:
                 svc.faq = details.get("faq")
                 svc.seo_title = svc.seo_title or details.get("seo_title")
                 svc.seo_description = svc.seo_description or details.get("seo_description")
+
+    # Ensure default admin account exists
+    import os
+    from app.services.auth_service import hash_password
+
+    default_admin_email = os.getenv("ADMIN_EMAIL", "admin@oshin.vn").strip().lower()
+    default_admin_password = os.getenv("ADMIN_PASSWORD", "Admin@123456")
+
+    admin_user = db.scalars(select(models_module.AdminUser).where(models_module.AdminUser.email == default_admin_email)).first()
+    if not admin_user:
+        db.add(
+            models_module.AdminUser(
+                email=default_admin_email,
+                password_hash=hash_password(default_admin_password),
+                is_active=True,
+            )
+        )
 
     try:
         Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
