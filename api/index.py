@@ -13,17 +13,6 @@ async def app(scope, receive, send):
     if scope.get("type") == "http":
         path = scope.get("path", "")
         headers = dict(scope.get("headers", []))
-        sys.stderr.write(
-            "[VERCEL ROUTE] path=%r matched=%r forwarded=%r invoke=%r matches=%r\n"
-            % (
-                path,
-                headers.get(b"x-matched-path", b""),
-                headers.get(b"x-forwarded-uri", b""),
-                headers.get(b"x-invoke-path", b""),
-                headers.get(b"x-now-route-matches", b""),
-            )
-        )
-        sys.stderr.flush()
 
         matched = (
             headers.get(b"x-matched-path", b"").decode("latin-1")
