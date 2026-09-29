@@ -34,8 +34,17 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 _request_log: dict[str, deque[float]] = defaultdict(deque)
 logger = logging.getLogger("uvicorn.error")
 SAFE_AI_MESSAGE = "Trợ lý đang tạm thời gián đoạn. Anh/chị vui lòng thử lại sau hoặc liên hệ 0901 040 484."
+import tempfile
+
 CHAT_UPLOAD_DIR = BASE_DIR / "storage" / "chat_uploads"
-CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+try:
+    CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+except Exception:
+    CHAT_UPLOAD_DIR = Path(tempfile.gettempdir()) / "chat_uploads"
+    try:
+        CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
 
 
 def _client_key(request: Request, session_id: str) -> str:
