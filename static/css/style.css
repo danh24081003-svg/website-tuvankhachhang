@@ -131,60 +131,101 @@ h3 {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 13px;
   min-width: 0;
   text-decoration: none;
   background: transparent;
   border: none;
   padding: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.brand-logo-img {
-  height: 56px;
-  width: auto;
-  max-width: 280px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
-  display: block;
-  background: transparent;
-  border: none;
-}
-
-.brand-fallback {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
+.brand:hover {
+  opacity: 0.96;
+  transform: translateY(-1px);
 }
 
 .brand-mark {
-  display: grid;
-  width: 46px;
-  height: 46px;
-  flex: 0 0 auto;
-  place-items: center;
-  color: var(--navy-950);
-  background: linear-gradient(135deg, var(--gold-light), var(--gold));
-  border-radius: 14px;
-  font-weight: 800;
+  display: flex;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  color: var(--navy-950, #021a35);
+  background: linear-gradient(135deg, #fff0b3 0%, var(--gold-light, #f5d061) 35%, var(--gold, #d4af37) 70%, #9a6b15 100%);
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  position: relative;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.brand:hover .brand-mark {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.8);
 }
 
 .brand-copy {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
-.brand-copy strong {
-  color: var(--white);
-  font-size: 1rem;
+.brand-copy strong,
+.brand-copy .brand-title {
+  color: var(--white, #ffffff);
+  font-size: 1.125rem;
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.15;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
 }
 
-.brand-copy em {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.8125rem;
-  font-style: normal;
-  font-weight: 500;
+.brand-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.brand-branch {
+  color: var(--gold-light, #f5d061);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.brand-sep {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.6875rem;
+}
+
+.brand-copy em,
+.brand-copy .brand-slogan {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.78125rem;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.brand-logo-img {
+  height: 48px;
+  width: auto;
+  max-width: 280px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
+  display: block;
+  background: transparent;
+  border: none;
 }
 
 .main-nav {
@@ -2520,9 +2561,43 @@ body.chat-is-open .chat-cta-btn {
     min-height: 68px;
   }
 
+  .brand {
+    gap: 10px;
+  }
+
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    font-size: 0.95rem;
+    border-radius: 10px;
+  }
+
+  .brand-copy strong,
+  .brand-copy .brand-title {
+    font-size: 0.95rem;
+  }
+
+  .brand-subtitle {
+    gap: 4px;
+  }
+
+  .brand-branch {
+    font-size: 0.6875rem;
+  }
+
+  .brand-copy em,
+  .brand-copy .brand-slogan {
+    display: none;
+  }
+
+  .brand-sep {
+    display: none;
+  }
+
   .brand-logo-img {
-    height: 46px;
-    max-width: 220px;
+    height: 40px;
+    max-width: 200px;
   }
 
   .mobile-menu-btn {

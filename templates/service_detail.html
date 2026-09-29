@@ -20,13 +20,14 @@
   <body class="page-service-detail" data-current-page="service_detail" data-service-slug="{{ service.slug }}" data-service-name="{{ service.name }}">
     <header class="site-header" data-site-header>
       <div class="container header-inner">
-        <a class="brand" href="/" aria-label="Oshin Thời Đại">
-          <img src="/static/img/logo-shin-thoidai.png" alt="Oshin Thời Đại - Khẳng định sự thành đạt" class="brand-logo-img">
-          <span class="brand-fallback" style="display:none;">
-            <span class="brand-mark" aria-hidden="true">OT</span>
-            <span class="brand-copy">
-              <strong data-company-name>{{ company.brand_name or 'Oshin Thời Đại' }}</strong>
-              <em data-company-description>{{ company.slogan or 'Khẳng định sự thành đạt' }}</em>
+        <a class="brand" href="/" aria-label="Oshin Thời Đại - Đất Phương Nam">
+          <span class="brand-mark" aria-hidden="true">OT</span>
+          <span class="brand-copy">
+            <strong class="brand-title" data-company-name>{{ company.brand_name or 'OSHIN THỜI ĐẠI' }}</strong>
+            <span class="brand-subtitle">
+              <span class="brand-branch">Đất Phương Nam</span>
+              <span class="brand-sep" aria-hidden="true">•</span>
+              <em class="brand-slogan" data-company-description>{{ company.slogan or 'Khẳng định sự thành đạt' }}</em>
             </span>
           </span>
         </a>
@@ -371,13 +372,14 @@
     <footer class="site-footer">
       <div class="container footer-main">
         <div class="footer-brand">
-          <a class="brand footer-logo" href="/" aria-label="Oshin Thời Đại">
-            <img src="/static/img/logo-shin-thoidai.png" alt="Oshin Thời Đại" class="brand-logo-img footer-logo-img">
-            <span class="brand-fallback" style="display:none;">
-              <span class="brand-mark" aria-hidden="true">OT</span>
-              <span class="brand-copy">
-                <strong data-company-name>{{ company.brand_name or 'Oshin Thời Đại' }}</strong>
-                <em data-company-description>{{ company.slogan or 'Khẳng định sự thành đạt' }}</em>
+          <a class="brand footer-logo" href="/" aria-label="Oshin Thời Đại - Đất Phương Nam">
+            <span class="brand-mark" aria-hidden="true">OT</span>
+            <span class="brand-copy">
+              <strong class="brand-title" data-company-name>{{ company.brand_name or 'OSHIN THỜI ĐẠI' }}</strong>
+              <span class="brand-subtitle">
+                <span class="brand-branch">Đất Phương Nam</span>
+                <span class="brand-sep" aria-hidden="true">•</span>
+                <em class="brand-slogan" data-company-description>{{ company.slogan or 'Khẳng định sự thành đạt' }}</em>
               </span>
             </span>
           </a>
