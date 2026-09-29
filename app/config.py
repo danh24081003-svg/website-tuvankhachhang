@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     admin_session_minutes: int = Field(default=480, alias="ADMIN_SESSION_MINUTES")
     admin_login_rate_limit_per_minute: int = Field(default=6, alias="ADMIN_LOGIN_RATE_LIMIT_PER_MINUTE")
     upload_max_bytes: int = Field(default=5 * 1024 * 1024, alias="UPLOAD_MAX_BYTES")
-    upload_storage: str = Field(default="local", alias="UPLOAD_STORAGE")
+    upload_storage: str = Field(default="database", alias="UPLOAD_STORAGE")
     upload_dir: str = Field(default=str(BASE_DIR / "static" / "uploads"), alias="UPLOAD_DIR")
     upload_url_prefix: str = Field(default="/static/uploads", alias="UPLOAD_URL_PREFIX")
     gcs_bucket_name: str | None = Field(default=None, alias="GCS_BUCKET_NAME")
