@@ -119,9 +119,14 @@ def init_db() -> None:
 
 
 def _load_json(filename: str):
-    path = BASE_DIR / "data" / filename
-    with path.open("r", encoding="utf-8") as file:
-        return json.load(file)
+    try:
+        path = BASE_DIR / "data" / filename
+        if path.exists() and path.is_file():
+            with path.open("r", encoding="utf-8") as file:
+                return json.load(file)
+    except Exception:
+        pass
+    return {} if filename.endswith("company.json") else []
 
 
 def seed_initial_site_data(db: Session, models_module) -> None:
