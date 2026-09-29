@@ -10,8 +10,14 @@ from app.services.default_service_data import DEFAULT_SERVICE_DETAILS
 
 settings = get_settings()
 
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-engine = create_engine(settings.database_url, connect_args=connect_args, pool_pre_ping=True)
+db_url = settings.database_url
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+"):
+    db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+connect_args = {"check_same_thread": False} if db_url.startswith("sqlite") else {}
+engine = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -195,7 +201,10 @@ def seed_initial_site_data(db: Session, models_module) -> None:
                 svc.seo_title = svc.seo_title or details.get("seo_title")
                 svc.seo_description = svc.seo_description or details.get("seo_description")
 
-    Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
+    try:
+        Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
     db.commit()
 
 
