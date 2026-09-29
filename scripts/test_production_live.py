@@ -94,7 +94,6 @@ status, body, _ = req(
         "name": "Khách Test Live",
         "phone": "0987654321",
         "service": "ve-sinh-cong-nghiep",
-        "address": "Ninh Kiều, Cần Thơ",
         "message": "Cần tư vấn vệ sinh nhà 100m2",
         "session_id": session_id
     }
@@ -118,11 +117,7 @@ img_bytes = buf.getvalue()
 boundary = "----WebKitFormBoundaryLiveTest123"
 body_parts = [
     f"--{boundary}".encode(),
-    b'Content-Disposition: form-data; name="session_id"',
-    b"",
-    session_id.encode(),
-    f"--{boundary}".encode(),
-    b'Content-Disposition: form-data; name="files"; filename="blue_test.jpg"',
+    b'Content-Disposition: form-data; name="file"; filename="blue_test.jpg"',
     b"Content-Type: image/jpeg",
     b"",
     img_bytes,
@@ -137,9 +132,9 @@ status, body, _ = req(
     headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}
 )
 upload_res = json.loads(body.decode(errors='ignore'))
-print(f"11. Image Upload -> Status: {status}, Attachments: {upload_res}")
+print(f"11. Image Upload -> Status: {status}, Attachment ID: {upload_res.get('attachment_id')}")
 assert status == 200
-att_id = upload_res[0]["id"]
+att_id = upload_res.get("attachment_id")
 
 # 12. Multimodal Chat (Vision)
 status, body, _ = req(

@@ -4,7 +4,6 @@ const state = {
   clientId: null,
   conversationId: null,
   chatOpened: false,
-  isExpanded: false,
   currentServiceName: null,
   currentServiceSlug: null,
   sending: false,
@@ -25,7 +24,6 @@ const selectors = {
   leadStatus: document.querySelector("[data-lead-status]"),
   chatWidget: document.querySelector("[data-chat-widget]"),
   chatFab: document.querySelector("[data-chat-fab]"),
-  chatToggleExpand: document.querySelector("[data-toggle-expand]"),
   chatMessages: document.querySelector("[data-chat-messages]"),
   chatForm: document.querySelector("[data-chat-form]"),
   quickReplies: document.querySelector("[data-quick-replies]"),
@@ -248,8 +246,6 @@ function openChat() {
   if (!selectors.chatWidget) return;
   selectors.chatWidget.hidden = false;
   selectors.chatWidget.classList.add("is-open");
-  document.body.classList.add("chat-is-open");
-  if (selectors.chatFab) selectors.chatFab.classList.add("is-hidden");
   state.chatOpened = true;
   showWelcomeIfEmpty();
   if (selectors.chatForm && selectors.chatForm.message) {
@@ -274,40 +270,7 @@ function closeChat() {
   if (!selectors.chatWidget) return;
   selectors.chatWidget.classList.remove("is-open");
   selectors.chatWidget.hidden = true;
-  document.body.classList.remove("chat-is-open");
-  if (selectors.chatFab) selectors.chatFab.classList.remove("is-hidden");
   state.chatOpened = false;
-}
-
-function toggleChatExpand(forceState) {
-  if (!selectors.chatWidget) return;
-  const next = typeof forceState === "boolean" ? forceState : !state.isExpanded;
-  state.isExpanded = next;
-
-  const messagesEl = selectors.chatMessages;
-  const isAtBottom = messagesEl ? (messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 60) : true;
-  const currentScrollTop = messagesEl ? messagesEl.scrollTop : 0;
-
-  selectors.chatWidget.classList.toggle("is-expanded", next);
-
-  if (selectors.chatToggleExpand) {
-    selectors.chatToggleExpand.title = next ? "Thu nhỏ" : "Phóng to";
-    selectors.chatToggleExpand.setAttribute("aria-label", next ? "Thu nhỏ khung trò chuyện" : "Phóng to khung trò chuyện");
-  }
-
-  try {
-    localStorage.setItem("chat_expanded", next ? "true" : "false");
-  } catch (e) {}
-
-  if (messagesEl) {
-    requestAnimationFrame(() => {
-      if (isAtBottom) {
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      } else {
-        messagesEl.scrollTop = currentScrollTop;
-      }
-    });
-  }
 }
 
 function closeMobileMenu() {
@@ -671,7 +634,7 @@ async function sendChatMessage(message, options = {}) {
     }
   } catch (error) {
     loading.remove();
-    state.lastFailedMessage = { text: trimmed, clientMessageId, files: filesToSend, attachment_ids: attachmentIds };
+    state.lastFailedMessage = { text: trimmed, clientMessageId, files: filesToSend };
     if (error.code === "AI_TEMPORARILY_UNAVAILABLE" || error.retryable) {
       setChatStatus("busy");
     } else {
@@ -1148,27 +1111,9 @@ function setupEvents() {
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && selectors.chatWidget && !selectors.chatWidget.hidden) {
-      if (state.isExpanded) {
-        toggleChatExpand(false);
-      } else {
-        closeChat();
-      }
+      closeChat();
     }
   });
-
-  if (selectors.chatToggleExpand) {
-    selectors.chatToggleExpand.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      toggleChatExpand();
-    });
-  }
-
-  try {
-    if (localStorage.getItem("chat_expanded") === "true") {
-      toggleChatExpand(true);
-    }
-  } catch (e) {}
 
   if (selectors.menuToggle && selectors.mainNav) {
     selectors.menuToggle.addEventListener("click", () => {

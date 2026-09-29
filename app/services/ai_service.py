@@ -134,30 +134,7 @@ class AIService:
                 logger.exception("Gemini API key client initialization failed")
                 self.client = None
 
-        # 2. Priority: Vertex AI with Credentials JSON string (for Serverless/Vercel)
-        if not self.client and self.settings.google_credentials_json and self.settings.google_credentials_json.strip():
-            try:
-                from google.oauth2 import service_account
-                info = json.loads(self.settings.google_credentials_json.strip())
-                creds = service_account.Credentials.from_service_account_info(
-                    info,
-                    scopes=["https://www.googleapis.com/auth/cloud-platform"],
-                )
-                project = info.get("project_id") or self.settings.google_cloud_project
-                self.client = genai.Client(
-                    vertexai=True,
-                    project=project,
-                    location=self.settings.google_cloud_location,
-                    credentials=creds,
-                    http_options=http_options,
-                )
-                self.active_provider = "vertex-ai"
-                self.active_model = self.settings.vertex_model or "gemini-2.5-flash"
-            except Exception:
-                logger.exception("Vertex AI credentials JSON initialization failed")
-                self.client = None
-
-        # 3. Priority: Vertex AI (Google Cloud Project with ADC)
+        # 2. Priority: Vertex AI (Google Cloud Project)
         if not self.client:
             project = self.settings.google_cloud_project
             has_project = bool(project and project != "your-project-id" and project.strip())
@@ -467,44 +444,41 @@ class AIService:
         models_to_try = [self.active_model]
         if self.fallback_model and self.fallback_model != self.active_model:
             models_to_try.append(self.fallback_model)
-        elif self.active_model != "gemini-1.5-flash":
-            models_to_try.append("gemini-1.5-flash")
 
         last_error: Exception | None = None
         for model_index, model in enumerate(models_to_try):
-            for attempt in range(2):
-                try:
-                    if model_index > 0 or attempt > 0:
-                        logger.warning("Trying AI request model=%s attempt=%s", model, attempt + 1)
-                    response = await to_thread.run_sync(lambda: self._generate_content_sync(model, contents, config))
-                    latency_ms = int((time.monotonic() - started) * 1000)
-                    logger.info(
-                        "AI request succeeded provider=%s model=%s latency_ms=%s",
-                        self.active_provider,
-                        model,
-                        latency_ms,
-                    )
-                    reply = getattr(response, "text", None)
-                    if reply and reply.strip():
-                        return reply.strip(), quick_actions
-                    logger.warning("AI provider returned an empty response model=%s", model)
-                    break
-                except Exception as err:
-                    last_error = err
-                    code, safe_message, retryable = self._classify_error(err)
-                    latency_ms = int((time.monotonic() - started) * 1000)
-                    logger.warning(
-                        "AI request failed provider=%s model=%s code=%s retryable=%s attempt=%s latency_ms=%s",
-                        self.active_provider,
-                        model,
-                        code,
-                        retryable,
-                        attempt + 1,
-                        latency_ms,
-                    )
-                    if retryable and attempt == 0:
-                        continue
-                    break
+            try:
+                if model_index == 1:
+                    logger.warning("Primary model unavailable, trying configured fallback.")
+                response = await to_thread.run_sync(lambda: self._generate_content_sync(model, contents, config))
+                latency_ms = int((time.monotonic() - started) * 1000)
+                logger.info(
+                    "AI request succeeded provider=%s model=%s latency_ms=%s",
+                    self.active_provider,
+                    model,
+                    latency_ms,
+                )
+                reply = getattr(response, "text", None)
+                if reply and reply.strip():
+                    return reply.strip(), quick_actions
+                logger.warning("AI provider returned an empty response model=%s", model)
+                break
+            except Exception as err:
+                last_error = err
+                code, safe_message, retryable = self._classify_error(err)
+                latency_ms = int((time.monotonic() - started) * 1000)
+                logger.warning(
+                    "AI request failed provider=%s model=%s code=%s retryable=%s latency_ms=%s",
+                    self.active_provider,
+                    model,
+                    code,
+                    retryable,
+                    latency_ms,
+                )
+                if model_index == 0 and len(models_to_try) > 1 and retryable:
+                    continue
+                logger.exception("Vertex AI chat request failed")
+                raise AIServiceError(code, safe_message, retryable=retryable) from err
 
         if last_error is not None:
             code, safe_message, retryable = self._classify_error(last_error)

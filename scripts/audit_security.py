@@ -10,16 +10,9 @@ PATTERNS = {
     'HARDCODED_LOCALHOST': r'http://127\.0\.0\.1|http://localhost',
 }
 
-EXCLUDED_DIRS = {
-    '.git', '__pycache__', '.pytest_cache', 'scratch', 'scratch_screenshots',
-    'scratch_hover', '.tmp-chrome', '.python', 'venv', '.venv', 'env', 'node_modules'
-}
-
 findings = []
 for root, dirs, files in os.walk('.'):
-    # filter out excluded dirs
-    dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
-    if any(p in root for p in EXCLUDED_DIRS):
+    if any(p in root for p in ['.git', '__pycache__', '.pytest_cache', 'scratch', 'scratch_screenshots', 'scratch_hover', '.tmp-chrome']):
         continue
     for f in files:
         if f.endswith(('.py', '.json', '.html', '.js', '.css', '.md', '.env', '.txt', '.sh', '.bat')):

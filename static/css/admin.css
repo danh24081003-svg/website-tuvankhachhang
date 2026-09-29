@@ -166,6 +166,10 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+.back-home-link:hover {
+  color: var(--blue) !important;
+}
+
 /* ==================================================
    ADMIN APP LAYOUT
    ================================================== */
