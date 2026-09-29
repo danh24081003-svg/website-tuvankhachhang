@@ -1,5 +1,6 @@
 import json
 import logging
+import tempfile
 import time
 from collections import defaultdict, deque
 from datetime import datetime
@@ -35,7 +36,11 @@ _request_log: dict[str, deque[float]] = defaultdict(deque)
 logger = logging.getLogger("uvicorn.error")
 SAFE_AI_MESSAGE = "Trợ lý đang tạm thời gián đoạn. Anh/chị vui lòng thử lại sau hoặc liên hệ 0901 040 484."
 CHAT_UPLOAD_DIR = BASE_DIR / "storage" / "chat_uploads"
-CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+try:
+    CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+except OSError:
+    CHAT_UPLOAD_DIR = Path(tempfile.gettempdir()) / "chat_uploads"
+    CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _client_key(request: Request, session_id: str) -> str:
