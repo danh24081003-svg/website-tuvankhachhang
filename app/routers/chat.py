@@ -7,7 +7,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -216,7 +216,6 @@ async def upload_chat_images(
             client_id=c_id,
             filename=file.filename or filename,
             storage_path=str(target_path),
-            data=optimized_bytes,
             mime_type=f"image/{ext}",
             file_size=len(optimized_bytes),
             width=w,
@@ -267,14 +266,11 @@ def get_chat_attachment(
     if not is_owner:
         raise HTTPException(status_code=403, detail="Không có quyền truy cập hình ảnh này.")
 
-    if att.data and len(att.data) > 0:
-        return Response(content=att.data, media_type=att.mime_type or "image/webp")
-
     path = Path(att.storage_path)
-    if path.exists() and path.is_file():
-        return FileResponse(path=path, media_type=att.mime_type or "image/webp")
+    if not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail="File ảnh không tìm thấy trên hệ thống lưu trữ.")
 
-    raise HTTPException(status_code=404, detail="File ảnh không tìm thấy trên hệ thống lưu trữ.")
+    return FileResponse(path=path, media_type=att.mime_type or "image/webp")
 
 
 @router.post("", response_model=ChatResponse)
@@ -463,12 +459,9 @@ async def chat(
     # 5. Load image bytes for Gemini Multimodal
     image_bytes_list: list[bytes] = []
     for att in attachment_records:
-        if att.data and len(att.data) > 0:
-            image_bytes_list.append(att.data)
-        else:
-            path = Path(att.storage_path)
-            if path.exists() and path.is_file() and path.stat().st_size > 0:
-                image_bytes_list.append(path.read_bytes())
+        path = Path(att.storage_path)
+        if path.exists() and path.is_file() and path.stat().st_size > 0:
+            image_bytes_list.append(path.read_bytes())
 
     # Generate reply
     history = db.scalars(
