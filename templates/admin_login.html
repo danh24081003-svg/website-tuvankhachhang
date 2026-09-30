@@ -16,12 +16,25 @@
             <small>Quản trị website</small>
           </div>
         </div>
-        <form data-login-form>
-          <label>Tên đăng nhập / Email<input name="email" type="text" autocomplete="username" required></label>
-          <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required></label>
+        <form data-login-form autocomplete="off">
+          <label>Tên đăng nhập / Email<input name="admin_email" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" readonly data-no-autofill required></label>
+          <label>Mật khẩu<input name="admin_password" type="password" autocomplete="new-password" readonly data-no-autofill required></label>
           <button type="submit">ĐĂNG NHẬP</button>
           <p class="form-message" data-login-message role="status"></p>
         </form>
+        <div style="display:flex;align-items:center;gap:12px;margin:24px 0 18px;color:var(--muted);font-size:0.82rem;font-weight:700;text-transform:uppercase;">
+          <span style="height:1px;flex:1;background:var(--line);"></span>
+          <span>Tài khoản admin</span>
+          <span style="height:1px;flex:1;background:var(--line);"></span>
+        </div>
+        {% if google_configured %}
+          <a class="google-login-btn" href="/auth/google/start?next=admin">
+            <span aria-hidden="true">G</span>
+            Đăng nhập bằng Google
+          </a>
+        {% else %}
+          <p class="form-message">Google login chưa được cấu hình.</p>
+        {% endif %}
         <div class="login-footer-links" style="margin-top: 24px; text-align: center; border-top: 1px solid var(--line, rgba(2, 26, 53, 0.08)); padding-top: 18px;">
           <a href="/" class="back-home-link" style="display: inline-flex; align-items: center; gap: 6px; color: var(--muted, #64748B); font-size: 0.9rem; font-weight: 600; text-decoration: none; transition: color 0.2s;">
             <span aria-hidden="true">←</span> Quay lại trang chủ

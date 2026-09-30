@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Đăng nhập - Oshin Thời Đại</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/admin.css">
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-card user-login-card">
+        <div class="login-brand user-login-brand">
+          <span>OT</span>
+          <div>
+            <strong>Oshin Thời Đại</strong>
+            <small>Tài khoản khách hàng</small>
+          </div>
+        </div>
+
+        {% if google_configured %}
+          <a class="google-login-btn" href="/auth/google/start">
+            <span aria-hidden="true">G</span>
+            Đăng nhập bằng Google
+          </a>
+        {% else %}
+          <p class="form-message">Google login chưa được cấu hình. Vui lòng set GOOGLE_CLIENT_ID và GOOGLE_CLIENT_SECRET.</p>
+        {% endif %}
+
+        <a class="back-home-link user-login-back" href="/">← Về website</a>
+      </section>
+    </main>
+  </body>
+</html>

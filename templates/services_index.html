@@ -31,7 +31,7 @@
             <span class="nav-phone-icon" aria-hidden="true">📞</span>
             <span data-company-hotline-text>{{ company.hotline or '0901 040 484' }}</span>
           </a>
-          <a class="nav-admin-btn" href="/admin" aria-label="Đăng nhập quản trị" title="Đăng nhập quản trị">
+          <a class="nav-admin-btn" href="/login" aria-label="Đăng nhập" title="Đăng nhập" data-auth-login>
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
@@ -46,6 +46,10 @@
             </span>
             <span>Đăng nhập quản trị</span>
           </a>
+          <div class="nav-user" data-auth-user hidden>
+            <span class="nav-user-name" data-auth-user-name></span>
+            <button class="nav-user-logout" type="button" data-auth-logout>Đăng xuất</button>
+          </div>
           <a class="nav-cta" href="#consultation-form">Nhận tư vấn <span aria-hidden="true">→</span></a>
         </nav>
       </div>
@@ -204,9 +208,7 @@
     </main>
 
     <!-- AI CHATBOT WIDGET -->
-    <button class="chat-fab" type="button" aria-label="Mở chat tư vấn" data-chat-fab>
-      <span aria-hidden="true">↗</span>
-    <button class="chat-cta-btn" type="button" aria-label="Mở chat tư vấn AI" data-chat-fab>
+    <button class="chat-cta-btn" type="button" aria-label="Mở chat tư vấn trực tuyến" data-chat-fab>
       <span class="chat-cta-content">
         <span class="chat-cta-icon-box" aria-hidden="true">
           <svg class="chat-cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -214,7 +216,7 @@
           </svg>
         </span>
         <span class="chat-cta-text">
-          <span class="chat-cta-heading">TƯ VẤN AI TRỰC TUYẾN</span>
+          <span class="chat-cta-heading">TƯ VẤN TRỰC TUYẾN</span>
           <span class="chat-cta-sub">
             <span class="chat-cta-live-dot" aria-hidden="true"></span>
             <span>Hỗ trợ 24/7</span>
@@ -232,8 +234,24 @@
           <strong>Trợ lý Oshin</strong>
           <span><i class="status-dot"></i><span data-chat-status>Đang trực tuyến</span></span>
         </div>
-        <button class="chat-icon-btn" type="button" aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới" data-new-conversation>+</button>
-        <button class="chat-close-btn" type="button" aria-label="Đóng chat" title="Đóng chat" data-close-chat>×</button>
+        <div class="chat-header-actions">
+          <button class="chat-icon-btn" type="button" aria-label="Phóng to khung chat" title="Phóng to khung chat" data-toggle-chat-size>
+            <svg class="icon-maximize" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 3H3v5"></path>
+              <path d="M16 3h5v5"></path>
+              <path d="M21 16v5h-5"></path>
+              <path d="M3 16v5h5"></path>
+            </svg>
+            <svg class="icon-minimize" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 3v5H3"></path>
+              <path d="M16 3v5h5"></path>
+              <path d="M21 16h-5v5"></path>
+              <path d="M3 16h5v5"></path>
+            </svg>
+          </button>
+          <button class="chat-icon-btn" type="button" aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới" data-new-conversation>+</button>
+          <button class="chat-close-btn" type="button" aria-label="Đóng chat" title="Đóng chat" data-close-chat>×</button>
+        </div>
       </div>
       <div class="chat-messages" data-chat-messages></div>
       <div class="quick-replies" data-quick-replies>

@@ -90,6 +90,23 @@ def _run_safe_migrations() -> None:
             if "data" not in attachment_cols:
                 conn.exec_driver_sql("ALTER TABLE chat_attachments ADD COLUMN data BYTEA" if not db_url.startswith("sqlite") else "ALTER TABLE chat_attachments ADD COLUMN data BLOB")
 
+        if "site_users" in tables:
+            user_cols = {col["name"] for col in inspector.get_columns("site_users")}
+            if "avatar_url" not in user_cols:
+                conn.exec_driver_sql("ALTER TABLE site_users ADD COLUMN avatar_url VARCHAR(500)")
+            if "google_sub" not in user_cols:
+                conn.exec_driver_sql("ALTER TABLE site_users ADD COLUMN google_sub VARCHAR(255)")
+            if "role" not in user_cols:
+                conn.exec_driver_sql("ALTER TABLE site_users ADD COLUMN role VARCHAR(40) DEFAULT 'customer' NOT NULL")
+            if "permissions" not in user_cols:
+                conn.exec_driver_sql("ALTER TABLE site_users ADD COLUMN permissions TEXT DEFAULT '[]' NOT NULL")
+            if "is_active" not in user_cols:
+                conn.exec_driver_sql("ALTER TABLE site_users ADD COLUMN is_active BOOLEAN DEFAULT 1 NOT NULL")
+            if "updated_at" not in user_cols:
+                conn.exec_driver_sql("ALTER TABLE site_users ADD COLUMN updated_at DATETIME")
+            if "last_login" not in user_cols:
+                conn.exec_driver_sql("ALTER TABLE site_users ADD COLUMN last_login DATETIME")
+
         if "chat_messages" in tables and "conversations" in tables:
             conn.execute(
                 text(

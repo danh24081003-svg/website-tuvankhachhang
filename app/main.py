@@ -13,7 +13,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config import BASE_DIR, get_settings
 from app.database import get_db, init_db
 from app.models import ManagedService, SiteImage, SiteSetting, StoredMedia
-from app.routers import admin, ai, chat, leads, services
+from app.routers import admin, ai, auth, chat, leads, services
 from app.services.service_consultation_flows import normalize_slug
 
 
@@ -33,6 +33,7 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 app.include_router(chat.router)
+app.include_router(auth.router)
 app.include_router(ai.router)
 app.include_router(leads.router)
 app.include_router(services.router)

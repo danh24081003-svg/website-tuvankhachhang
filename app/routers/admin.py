@@ -1,3 +1,4 @@
+import json
 import time
 from collections import defaultdict, deque
 from datetime import datetime
@@ -12,7 +13,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.config import BASE_DIR, get_settings
 from app.database import get_db
-from app.models import AdminSession, AdminUser, ChatAttachment, ChatMessage, Conversation, Customer, Lead, ManagedService, SiteImage, SiteSetting, StoredMedia
+from app.models import AdminSession, AdminUser, ChatAttachment, ChatMessage, Conversation, Customer, Lead, ManagedService, SiteImage, SiteSetting, SiteUser, StoredMedia
 from app.services.auth_service import clear_admin_session, create_admin_session, hash_token, require_admin, require_admin_with_csrf, verify_password
 from app.services.storage_service import get_storage_provider
 
@@ -71,6 +72,12 @@ class ServicePayload(BaseModel):
 
 class LeadStatusPayload(BaseModel):
     status: str = Field(min_length=2, max_length=40)
+
+
+class UserPermissionPayload(BaseModel):
+    role: str = Field(min_length=2, max_length=40)
+    permissions: list[str] = Field(default_factory=list)
+    is_active: bool = True
 
 
 def _admin_logged_in(request: Request, db: Session) -> bool:
@@ -178,11 +185,32 @@ def _chat_attachment_out(att: ChatAttachment) -> dict:
     }
 
 
+def user_out(user: SiteUser) -> dict:
+    try:
+        permissions = json.loads(user.permissions or "[]")
+    except json.JSONDecodeError:
+        permissions = []
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "avatar_url": user.avatar_url or "",
+        "role": user.role,
+        "permissions": permissions if isinstance(permissions, list) else [],
+        "is_active": user.is_active,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+        "last_login": user.last_login.isoformat() if user.last_login else None,
+    }
+
+
 @router.get("/admin/login", response_class=HTMLResponse)
 def admin_login_page(request: Request, db: Session = Depends(get_db)):
     if _admin_logged_in(request, db):
         return RedirectResponse("/admin", status_code=302)
-    return templates.TemplateResponse(request, "admin_login.html")
+    settings = get_settings()
+    google_configured = bool(settings.google_client_id and settings.google_client_secret)
+    return templates.TemplateResponse(request, "admin_login.html", {"google_configured": google_configured})
 
 
 @router.get("/admin", response_class=HTMLResponse)
@@ -199,6 +227,28 @@ def admin_login(payload: LoginPayload, request: Request, response: Response, db:
     user = db.scalars(select(AdminUser).where(AdminUser.email == payload.email.strip().lower())).first()
     if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Thông tin đăng nhập không đúng")
+    site_user = db.scalars(select(SiteUser).where(SiteUser.email == user.email)).first()
+    if not site_user:
+        site_user = SiteUser(
+            email=user.email,
+            name=user.email.split("@")[0],
+            role="admin",
+            permissions=json.dumps(
+                [
+                    "chat:view",
+                    "lead:view",
+                    "lead:update",
+                    "service:view",
+                    "service:update",
+                    "content:update",
+                    "media:update",
+                ],
+                ensure_ascii=False,
+            ),
+            is_active=True,
+        )
+        db.add(site_user)
+        db.commit()
     create_admin_session(db, user, response)
     return {"ok": True}
 
@@ -220,12 +270,51 @@ def admin_me(user: AdminUser = Depends(require_admin)):
     return {"email": user.email}
 
 
+@router.get("/api/admin/users")
+def admin_users(db: Session = Depends(get_db), _: AdminUser = Depends(require_admin)):
+    users = db.scalars(select(SiteUser).order_by(SiteUser.created_at.desc(), SiteUser.id.desc()).limit(500)).all()
+    return [user_out(user) for user in users]
+
+
+@router.put("/api/admin/users/{user_id}")
+def admin_update_user_permissions(
+    user_id: int,
+    payload: UserPermissionPayload,
+    db: Session = Depends(get_db),
+    _: AdminUser = Depends(require_admin_with_csrf),
+):
+    user = db.get(SiteUser, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    clean_role = payload.role.strip().lower()
+    if clean_role not in {"customer", "staff", "manager", "admin"}:
+        raise HTTPException(status_code=400, detail="Vai trò không hợp lệ")
+    allowed_permissions = {
+        "chat:view",
+        "lead:view",
+        "lead:update",
+        "service:view",
+        "service:update",
+        "content:update",
+        "media:update",
+    }
+    clean_permissions = sorted({item.strip().lower() for item in payload.permissions if item.strip().lower() in allowed_permissions})
+    user.role = clean_role
+    user.permissions = json.dumps(clean_permissions, ensure_ascii=False)
+    user.is_active = payload.is_active
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+    return user_out(user)
+
+
 @router.get("/api/admin/overview")
 def admin_overview(db: Session = Depends(get_db), _: AdminUser = Depends(require_admin)):
     total_leads = db.scalar(select(func.count(Lead.id))) or 0
     new_leads = db.scalar(select(func.count(Lead.id)).where(Lead.status == "new")) or 0
     total_chats = db.scalar(select(func.count(func.distinct(ChatMessage.session_id)))) or 0
     service_count = db.scalar(select(func.count(ManagedService.id)).where(ManagedService.is_active.is_(True))) or 0
+    user_count = db.scalar(select(func.count(SiteUser.id))) or 0
     recent = db.scalars(select(Lead).options(joinedload(Lead.customer)).order_by(Lead.created_at.desc()).limit(8)).all()
     return {
         "cards": {
@@ -233,6 +322,7 @@ def admin_overview(db: Session = Depends(get_db), _: AdminUser = Depends(require
             "new_leads": new_leads,
             "total_chats": total_chats,
             "service_count": service_count,
+            "user_count": user_count,
         },
         "recent_leads": [lead_out(item) for item in recent],
     }

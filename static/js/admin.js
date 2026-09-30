@@ -18,6 +18,23 @@ const STATUS_LABELS = {
   cancelled: "Hủy",
 };
 
+const USER_ROLE_LABELS = {
+  customer: "Khách hàng",
+  staff: "Nhân viên",
+  manager: "Quản lý",
+  admin: "Quản trị",
+};
+
+const USER_PERMISSION_LABELS = {
+  "chat:view": "Xem hội thoại",
+  "lead:view": "Xem yêu cầu tư vấn",
+  "lead:update": "Cập nhật yêu cầu",
+  "service:view": "Xem dịch vụ",
+  "service:update": "Sửa dịch vụ",
+  "content:update": "Sửa nội dung",
+  "media:update": "Quản lý media",
+};
+
 function csrfToken() {
   const match = document.cookie
     .split("; ")
@@ -59,6 +76,15 @@ function showToast(message, isError = false) {
     toast.setAttribute("hidden", "");
     toast.style.display = "none";
   }, 3500);
+}
+
+function consumeLoginSuccessParam() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("login") !== "success") return;
+  showToast("Đăng nhập thành công.");
+  url.searchParams.delete("login");
+  const cleanUrl = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState({}, document.title, cleanUrl);
 }
 
 function escapeHtml(value) {
@@ -157,12 +183,19 @@ async function renderOverview() {
         <span>Số dịch vụ hoạt động</span>
         <strong>${data.cards.service_count}</strong>
       </article>
+      <a class="card dashboard-link-card" href="/admin/users">
+        <span>Người dùng Google</span>
+        <strong>${data.cards.user_count || 0}</strong>
+      </a>
     </div>
 
     <section class="panel">
       <div class="panel-header">
         <h2>Yêu cầu tư vấn gần đây</h2>
-        <a class="ghost" href="/admin/leads">Xem tất cả →</a>
+        <div class="actions">
+          <a class="ghost" href="/admin/users">Phân quyền người dùng →</a>
+          <a class="ghost" href="/admin/leads">Xem tất cả →</a>
+        </div>
       </div>
       <div class="table-responsive">
         ${renderLeadsTable(data.recent_leads)}
@@ -1113,7 +1146,107 @@ async function renderChatDetail(sessionId) {
 }
 
 // ==================================================
-// 8. MEDIA LIBRARY
+// 8. USER PERMISSIONS
+// ==================================================
+async function renderUsers() {
+  setTitle("Người dùng & phân quyền");
+  content.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted)">Đang tải danh sách người dùng...</div>`;
+  const users = await api("/api/admin/users");
+
+  content.innerHTML = `
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Tài khoản đăng nhập Google</h2>
+        <span>${users.length} người dùng</span>
+      </div>
+      <div class="panel-body">
+        ${users.length === 0 ? `
+          <div style="padding:24px;text-align:center;color:var(--muted)">Chưa có người dùng đăng nhập Google.</div>
+        ` : `
+          <div class="user-grid">
+            ${users.map((user) => userPermissionCard(user)).join("")}
+          </div>
+        `}
+      </div>
+    </section>
+  `;
+
+  document.querySelectorAll("[data-user-permission-form]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const userId = form.dataset.userPermissionForm;
+      const permissions = Array.from(form.querySelectorAll("input[name='permissions']:checked")).map((item) => item.value);
+      const payload = {
+        role: form.role.value,
+        is_active: form.is_active.checked,
+        permissions,
+      };
+      const button = form.querySelector("button[type='submit']");
+      button.disabled = true;
+      try {
+        await api(`/api/admin/users/${encodeURIComponent(userId)}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+        showToast("Đã cập nhật quyền người dùng.");
+        renderUsers();
+      } catch (error) {
+        showToast(error.message, true);
+        button.disabled = false;
+      }
+    });
+  });
+}
+
+function userPermissionCard(user) {
+  const permissions = Array.isArray(user.permissions) ? user.permissions : [];
+  return `
+    <article class="user-card">
+      <div class="user-card-head">
+        <div class="user-avatar">
+          ${user.avatar_url ? `<img src="${escapeHtml(user.avatar_url)}" alt="">` : `<span>${escapeHtml((user.name || user.email || "U").slice(0, 1).toUpperCase())}</span>`}
+        </div>
+        <div>
+          <h3>${escapeHtml(user.name || user.email)}</h3>
+          <p>${escapeHtml(user.email)}</p>
+          <span class="status-pill ${user.is_active ? "completed" : "cancelled"}">${user.is_active ? "Đang hoạt động" : "Đã khóa"}</span>
+        </div>
+      </div>
+
+      <form data-user-permission-form="${user.id}">
+        <label>Vai trò
+          <select name="role">
+            ${Object.entries(USER_ROLE_LABELS).map(([value, label]) => `
+              <option value="${value}" ${user.role === value ? "selected" : ""}>${label}</option>
+            `).join("")}
+          </select>
+        </label>
+
+        <fieldset class="permission-list">
+          <legend>Quyền truy cập</legend>
+          ${Object.entries(USER_PERMISSION_LABELS).map(([value, label]) => `
+            <label class="checkbox-label">
+              <input type="checkbox" name="permissions" value="${value}" ${permissions.includes(value) ? "checked" : ""}>
+              <span>${label}</span>
+            </label>
+          `).join("")}
+        </fieldset>
+
+        <label class="checkbox-label">
+          <input name="is_active" type="checkbox" ${user.is_active ? "checked" : ""}>
+          <span>Cho phép đăng nhập</span>
+        </label>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary">Lưu quyền</button>
+        </div>
+      </form>
+    </article>
+  `;
+}
+
+// ==================================================
+// 9. MEDIA LIBRARY
 // ==================================================
 async function renderMedia() {
   setTitle("Media Library - Thư viện hình ảnh");
@@ -1211,7 +1344,7 @@ async function renderMedia() {
 }
 
 // ==================================================
-// 9. SETTINGS & SECRETS INFO
+// 10. SETTINGS & SECRETS INFO
 // ==================================================
 function renderSettingsInfo() {
   setTitle("Cài đặt hệ thống");
@@ -1245,6 +1378,7 @@ async function route() {
     if (path.startsWith("/admin/leads/")) return renderLeadDetail(path.split("/").pop());
     if (path === "/admin/chats") return renderChats();
     if (path.startsWith("/admin/chats/")) return renderChatDetail(path.split("/").pop());
+    if (path === "/admin/users") return renderUsers();
     if (path === "/admin/media") return renderMedia();
     if (path === "/admin/settings") return renderSettingsInfo();
     return renderOverview();
@@ -1320,4 +1454,5 @@ api("/api/admin/me").then((me) => {
   }
 });
 
+consumeLoginSuccessParam();
 route();

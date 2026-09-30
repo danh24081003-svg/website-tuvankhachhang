@@ -37,6 +37,10 @@ const selectors = {
   menuToggle: document.querySelector("[data-menu-toggle]"),
   mainNav: document.querySelector("[data-main-nav]"),
   header: document.querySelector("[data-site-header]"),
+  authLogin: document.querySelectorAll("[data-auth-login]"),
+  authUser: document.querySelectorAll("[data-auth-user]"),
+  authUserName: document.querySelectorAll("[data-auth-user-name]"),
+  authLogout: document.querySelectorAll("[data-auth-logout]"),
 };
 
 const pageContext = {
@@ -269,8 +273,24 @@ function openChatWithService(serviceName, serviceSlug) {
 function closeChat() {
   if (!selectors.chatWidget) return;
   selectors.chatWidget.classList.remove("is-open");
+  selectors.chatWidget.classList.remove("is-expanded");
+  updateChatSizeControls(false);
   selectors.chatWidget.hidden = true;
   state.chatOpened = false;
+}
+
+function updateChatSizeControls(isExpanded) {
+  document.querySelectorAll("[data-toggle-chat-size]").forEach((item) => {
+    item.setAttribute("aria-label", isExpanded ? "Thu nhỏ khung chat" : "Phóng to khung chat");
+    item.setAttribute("title", isExpanded ? "Thu nhỏ khung chat" : "Phóng to khung chat");
+    item.setAttribute("aria-pressed", String(isExpanded));
+  });
+}
+
+function toggleChatSize() {
+  if (!selectors.chatWidget) return;
+  const isExpanded = selectors.chatWidget.classList.toggle("is-expanded");
+  updateChatSizeControls(isExpanded);
 }
 
 function closeMobileMenu() {
@@ -1029,6 +1049,66 @@ function setupHeader() {
   window.addEventListener("scroll", update, { passive: true });
 }
 
+function showSiteToast(message, isError = false) {
+  let toast = document.querySelector("[data-site-toast]");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.className = "site-toast";
+    toast.dataset.siteToast = "true";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.toggle("error", isError);
+  toast.removeAttribute("hidden");
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.setAttribute("hidden", "");
+  }, 3500);
+}
+
+function consumeLoginSuccessParam() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get("login") !== "success") return;
+  showSiteToast("Đăng nhập thành công.");
+  url.searchParams.delete("login");
+  const cleanUrl = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState({}, document.title, cleanUrl);
+}
+
+async function loadAuthUser() {
+  if (!selectors.authLogin.length && !selectors.authUser.length) return;
+  try {
+    const data = await requestJson("/api/auth/me");
+    const user = data && data.authenticated ? data.user : null;
+    selectors.authLogin.forEach((item) => {
+      item.hidden = Boolean(user);
+    });
+    selectors.authUser.forEach((item) => {
+      item.hidden = !user;
+    });
+    selectors.authUserName.forEach((item) => {
+      item.textContent = user ? (user.name || user.email || "Tài khoản") : "";
+    });
+  } catch (error) {
+    selectors.authLogin.forEach((item) => {
+      item.hidden = false;
+    });
+    selectors.authUser.forEach((item) => {
+      item.hidden = true;
+    });
+  }
+}
+
+async function logoutAuthUser() {
+  try {
+    await requestJson("/api/auth/logout", { method: "POST", body: "{}" });
+    showSiteToast("Đã đăng xuất.");
+  } catch (error) {
+    showSiteToast(error.message || "Chưa đăng xuất được.", true);
+  }
+  await loadAuthUser();
+}
+
 function setupReveal() {
   const items = document.querySelectorAll(".reveal:not(.is-observed)");
   if (!items.length) return;
@@ -1058,6 +1138,12 @@ function setupReveal() {
 
 function setupEvents() {
   document.querySelectorAll("[data-open-chat]").forEach((item) => item.addEventListener("click", openChat));
+  selectors.authLogout.forEach((item) => {
+    item.addEventListener("click", (event) => {
+      event.preventDefault();
+      logoutAuthUser();
+    });
+  });
   
   document.querySelectorAll("[data-open-chat-service]").forEach((item) => {
     item.addEventListener("click", (e) => {
@@ -1076,6 +1162,14 @@ function setupEvents() {
       event.preventDefault();
       event.stopPropagation();
       closeChat();
+    });
+  });
+
+  document.querySelectorAll("[data-toggle-chat-size]").forEach((item) => {
+    item.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleChatSize();
     });
   });
 
@@ -1221,8 +1315,9 @@ async function init() {
   setupHeader();
   setupReveal();
   setupEvents();
+  consumeLoginSuccessParam();
   try {
-    await Promise.all([loadCompany(), loadSiteContent(), loadSiteImages(), refreshAIStatus()]);
+    await Promise.all([loadCompany(), loadSiteContent(), loadSiteImages(), refreshAIStatus(), loadAuthUser()]);
     await Promise.all([loadServices(), loadChatHistory()]);
   } catch (error) {
     console.error(error);

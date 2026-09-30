@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     upload_dir: str = Field(default=str(BASE_DIR / "static" / "uploads"), alias="UPLOAD_DIR")
     upload_url_prefix: str = Field(default="/static/uploads", alias="UPLOAD_URL_PREFIX")
     gcs_bucket_name: str | None = Field(default=None, alias="GCS_BUCKET_NAME")
+    google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")
+    google_client_secret: str | None = Field(default=None, alias="GOOGLE_CLIENT_SECRET")
+    google_redirect_uri: str | None = Field(default=None, alias="GOOGLE_REDIRECT_URI")
 
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", env_file_encoding="utf-8", extra="ignore")
 

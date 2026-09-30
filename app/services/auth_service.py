@@ -9,12 +9,13 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.database import get_db
-from app.models import AdminSession, AdminUser
+from app.models import AdminSession, AdminUser, SiteUser, UserSession
 
 
 SESSION_COOKIE = "oshin_admin_session"
 CSRF_COOKIE = "oshin_admin_csrf"
 CSRF_HEADER = "x-csrf-token"
+USER_SESSION_COOKIE = "oshin_user_session"
 
 
 def _bcrypt():
@@ -69,9 +70,33 @@ def create_admin_session(db: Session, user: AdminUser, response: Response) -> No
     )
 
 
+def create_user_session(db: Session, user: SiteUser, response: Response) -> None:
+    settings = get_settings()
+    token = secrets.token_urlsafe(48)
+    expires_at = datetime.utcnow() + timedelta(days=30)
+    db.add(UserSession(user_id=user.id, token_hash=hash_token(token), expires_at=expires_at))
+    user.last_login = datetime.utcnow()
+    db.commit()
+
+    secure = settings.environment.lower() == "production"
+    response.set_cookie(
+        USER_SESSION_COOKIE,
+        token,
+        max_age=30 * 24 * 60 * 60,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        path="/",
+    )
+
+
 def clear_admin_session(response: Response) -> None:
     response.delete_cookie(SESSION_COOKIE, path="/")
     response.delete_cookie(CSRF_COOKIE, path="/")
+
+
+def clear_user_session(response: Response) -> None:
+    response.delete_cookie(USER_SESSION_COOKIE, path="/")
 
 
 def _session_from_request(request: Request, db: Session) -> AdminSession:
@@ -111,4 +136,14 @@ def is_admin_logged_in(request: Request, db: Session) -> bool:
         return True
     except Exception:
         return False
+
+
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> SiteUser | None:
+    token = request.cookies.get(USER_SESSION_COOKIE)
+    if not token:
+        return None
+    session = db.scalars(select(UserSession).where(UserSession.token_hash == hash_token(token))).first()
+    if not session or session.expires_at <= datetime.utcnow() or not session.user.is_active:
+        return None
+    return session.user
 

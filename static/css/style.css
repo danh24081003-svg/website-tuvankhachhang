@@ -304,6 +304,73 @@ h3 {
   display: none;
 }
 
+.nav-user-login {
+  display: inline-flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 800;
+}
+
+.nav-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 210px;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.nav-user[hidden],
+.nav-user-login[hidden] {
+  display: none !important;
+}
+
+.nav-user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.nav-user-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.site-toast {
+  position: fixed;
+  top: 86px;
+  right: 20px;
+  z-index: 1200;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 13px 16px;
+  border-radius: 10px;
+  background: #0f7a3a;
+  color: #fff;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+  font-weight: 800;
+}
+
+.site-toast.error {
+  background: #b42318;
+}
+
+.site-toast[hidden] {
+  display: none !important;
+}
+
 .nav-cta {
   display: inline-flex;
   align-items: center;
@@ -2666,6 +2733,17 @@ body.chat-is-open .chat-cta-btn {
     gap: 12px;
     color: var(--gold) !important;
     font-weight: 700;
+  }
+
+  .nav-user-login,
+  .nav-user {
+    padding: 12px 0;
+    max-width: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .nav-user {
+    justify-content: space-between;
   }
 
   .nav-admin-link-icon {
