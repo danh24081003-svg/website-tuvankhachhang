@@ -532,3 +532,13 @@ class AIService:
             "AI_PROVIDER_ERROR",
             "Trợ lý đang tạm thời gián đoạn. Anh/chị vui lòng thử lại sau hoặc liên hệ 0901 040 484.",
         )
+
+
+from functools import lru_cache
+from app.services.knowledge_service import get_knowledge_service
+
+
+@lru_cache
+def get_ai_service() -> AIService:
+    return AIService(get_knowledge_service())
+

@@ -17,7 +17,7 @@ from app.config import BASE_DIR, get_settings
 from app.database import get_db
 from app.models import ChatAttachment, ChatMessage, ConsultationState, Conversation, Customer, Lead
 from app.schemas import ChatAttachmentOut, ChatMessageOut, ChatRequest, ChatResponse
-from app.services.ai_service import AIService, AIServiceError
+from app.services.ai_service import AIService, AIServiceError, get_ai_service
 from app.services.auth_service import is_admin_logged_in
 from app.services.knowledge_service import KnowledgeService, get_knowledge_service
 from app.services.service_consultation_flows import (
@@ -278,7 +278,7 @@ async def chat(
     payload: ChatRequest,
     request: Request,
     db: Session = Depends(get_db),
-    knowledge: KnowledgeService = Depends(get_knowledge_service),
+    ai_service: AIService = Depends(get_ai_service),
 ):
     _rate_limit(request, payload.session_id)
     payload.validate_message_or_attachments()
@@ -341,7 +341,6 @@ async def chat(
             reqs["has_customer_photos"] = f"Đã gửi {len(attachment_records)} hình ảnh hiện trạng"
 
     state.requirements = json.dumps(reqs, ensure_ascii=False)
-    db.commit()
 
     # 3. Save user message once. Retry uses the same client_message_id to avoid duplicate DB history.
     user_message = None
@@ -386,8 +385,7 @@ async def chat(
         if conversation.title == "Cuộc trò chuyện mới":
             conversation.title = _conversation_title_from_message(payload.message or "Gửi ảnh tư vấn")
         conversation.updated_at = datetime.utcnow()
-        db.commit()
-        db.refresh(user_message)
+        db.flush()
     elif not user_message.conversation_id:
         user_message.conversation_id = conversation.id
 
@@ -395,7 +393,6 @@ async def chat(
     for att in attachment_records:
         att.conversation_id = conversation.id
         att.message_id = user_message.id
-    db.commit()
 
     # 4. Check if lead should be created / updated
     lowered = payload.message.lower().strip()
@@ -458,7 +455,8 @@ async def chat(
             att.lead_id = lead_obj.id
         if is_confirm:
             state.status = "completed"
-        db.commit()
+
+    db.flush()
 
     # 5. Load image bytes for Gemini Multimodal
     image_bytes_list: list[bytes] = []
@@ -476,7 +474,6 @@ async def chat(
         .order_by(ChatMessage.created_at.asc(), ChatMessage.id.asc())
     ).all()
 
-    ai_service = AIService(knowledge)
     try:
         reply, quick_actions = await ai_service.generate_reply(
             user_message=payload.message,
