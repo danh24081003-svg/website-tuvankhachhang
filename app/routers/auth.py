@@ -38,6 +38,11 @@ def _redirect_uri(request: Request) -> str:
     settings = get_settings()
     if settings.google_redirect_uri:
         return settings.google_redirect_uri
+    forwarded_proto = request.headers.get("x-forwarded-proto", "")
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+    if host:
+        proto = forwarded_proto or ("https" if request.url.scheme == "https" else "http")
+        return f"{proto}://{host}/auth/google/callback"
     base_url = settings.app_url.rstrip("/") if settings.app_url else str(request.base_url).rstrip("/")
     return f"{base_url}/auth/google/callback"
 
