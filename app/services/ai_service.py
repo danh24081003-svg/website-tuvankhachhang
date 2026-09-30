@@ -431,6 +431,11 @@ class AIService:
             has_phone=has_phone,
         )
 
+        # Fast-path for simple greetings and thank-you messages without images
+        lowered_msg = (user_message or "").lower().strip()
+        if not image_bytes_list and lowered_msg in {"hi", "hello", "halo", "alo", "chào", "xin chào", "xin chao", "chào em", "chao em", "cảm ơn", "cam on", "thank you", "thanks", "tks"}:
+            return fallback_text, quick_actions
+
         if not self.client:
             logger.error("AI chat request failed because no AI client is configured")
             raise AIServiceError(
