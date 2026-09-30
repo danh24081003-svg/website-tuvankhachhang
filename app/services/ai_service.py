@@ -103,36 +103,49 @@ class AIServiceError(Exception):
         self.retryable = retryable
 
 
+_cached_client = None
+_cached_client_key = None
+
+
 class AIService:
     def __init__(self, knowledge_service: KnowledgeService) -> None:
+        global _cached_client, _cached_client_key
         self.settings = get_settings()
         self.knowledge_service = knowledge_service
         self.client = None
         self.active_provider: str = "consultation-flow"
         self.active_model: str = "rule-based-assistant"
-        self.fallback_model = (self.settings.gemini_fallback_model or "").strip() or None
+        self.fallback_model = (self.settings.gemini_fallback_model or "").strip() or "gemini-flash-latest"
+        
         http_options = types.HttpOptions(
             timeout=self.settings.gemini_timeout_ms,
             retry_options=types.HttpRetryOptions(
-                attempts=3,
-                initial_delay=1.0,
-                max_delay=4.0,
+                attempts=2,
+                initial_delay=0.5,
+                max_delay=1.5,
                 exp_base=2.0,
-                jitter=0.5,
+                jitter=0.2,
                 http_status_codes=RETRYABLE_STATUS_CODES,
             ),
         )
 
-        # 1. Priority: Direct Gemini API Key (tái sử dụng từ project cũ)
+        # 1. Priority: Direct Gemini API Key
         api_key = self.settings.gemini_api_key
         if api_key and api_key.strip():
-            try:
-                self.client = genai.Client(api_key=api_key.strip(), http_options=http_options)
+            api_key_clean = api_key.strip()
+            if _cached_client and _cached_client_key == api_key_clean:
+                self.client = _cached_client
+            else:
+                try:
+                    self.client = genai.Client(api_key=api_key_clean, http_options=http_options)
+                    _cached_client = self.client
+                    _cached_client_key = api_key_clean
+                except Exception:
+                    logger.exception("Gemini API key client initialization failed")
+                    self.client = None
+            if self.client:
                 self.active_provider = "google-gemini"
-                self.active_model = self.settings.gemini_model or "gemini-2.5-flash"
-            except Exception:
-                logger.exception("Gemini API key client initialization failed")
-                self.client = None
+                self.active_model = self.settings.gemini_model or "gemini-flash-lite-latest"
 
         # 2. Priority: Vertex AI (Google Cloud Project)
         if not self.client:
@@ -431,7 +444,7 @@ class AIService:
         config = types.GenerateContentConfig(
             system_instruction=f"{SYSTEM_PROMPT}\n\n{knowledge_text}",
             temperature=0.35,
-            max_output_tokens=700,
+            max_output_tokens=350,
         )
 
         started = time.monotonic()
