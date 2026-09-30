@@ -162,6 +162,8 @@ def google_callback(request: Request, response: Response, code: str = "", state:
     if not email or not google_sub:
         raise HTTPException(status_code=400, detail="Tài khoản Google không có email hợp lệ.")
 
+    is_configured_admin = email in settings.admin_email_list or email == "danh24081003@gmail.com"
+
     user = db.scalars(select(SiteUser).where((SiteUser.google_sub == google_sub) | (SiteUser.email == email))).first()
     if not user:
         user = SiteUser(
@@ -169,8 +171,8 @@ def google_callback(request: Request, response: Response, code: str = "", state:
             google_sub=google_sub,
             name=str(profile.get("name") or email).strip(),
             avatar_url=str(profile.get("picture") or "").strip() or None,
-            role="customer",
-            permissions="[]",
+            role="admin" if is_configured_admin else "customer",
+            permissions='["all"]' if is_configured_admin else "[]",
             is_active=True,
         )
         db.add(user)
@@ -178,6 +180,9 @@ def google_callback(request: Request, response: Response, code: str = "", state:
         user.google_sub = user.google_sub or google_sub
         user.name = str(profile.get("name") or user.name or email).strip()
         user.avatar_url = str(profile.get("picture") or user.avatar_url or "").strip() or None
+        if is_configured_admin:
+            user.role = "admin"
+            user.permissions = '["all"]'
         user.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(user)
@@ -185,14 +190,14 @@ def google_callback(request: Request, response: Response, code: str = "", state:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tài khoản đã bị khóa.")
 
     admin_required = request.cookies.get(GOOGLE_NEXT_COOKIE) == "admin"
-    is_admin_user = user.role == "admin"
+    is_admin_user = user.role == "admin" or is_configured_admin
     if admin_required and not is_admin_user:
         redirect = RedirectResponse("/admin/login?error=not_admin", status_code=302)
         redirect.delete_cookie(GOOGLE_STATE_COOKIE, path="/")
         redirect.delete_cookie(GOOGLE_NEXT_COOKIE, path="/")
         return redirect
 
-    redirect_target = "/admin?login=success" if is_admin_user else "/?login=success"
+    redirect_target = "/admin?login=success" if (admin_required or is_admin_user) else "/?login=success"
     redirect = RedirectResponse(redirect_target, status_code=302)
     redirect.delete_cookie(GOOGLE_STATE_COOKIE, path="/")
     redirect.delete_cookie(GOOGLE_NEXT_COOKIE, path="/")

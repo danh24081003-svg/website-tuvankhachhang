@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     port: int = Field(default=8080, alias="PORT")
     app_url: str = Field(default="http://127.0.0.1:8080", alias="APP_URL")
     gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
-    gemini_model: str = Field(default="gemini-flash-lite-latest", alias="GEMINI_MODEL")
-    gemini_fallback_model: str | None = Field(default="gemini-flash-latest", alias="GEMINI_FALLBACK_MODEL")
-    gemini_timeout_ms: int = Field(default=12000, alias="GEMINI_TIMEOUT_MS")
+    gemini_model: str = Field(default="gemini-1.5-flash", alias="GEMINI_MODEL")
+    gemini_fallback_model: str | None = Field(default=None, alias="GEMINI_FALLBACK_MODEL")
+    gemini_timeout_ms: int = Field(default=30000, alias="GEMINI_TIMEOUT_MS")
     google_cloud_project: str | None = Field(default=None, alias="GOOGLE_CLOUD_PROJECT")
     google_cloud_location: str = Field(default="global", alias="GOOGLE_CLOUD_LOCATION")
     vertex_model: str = Field(default="gemini-2.5-flash", alias="VERTEX_MODEL")
@@ -28,14 +28,15 @@ class Settings(BaseSettings):
     secret_key: str = Field(default="change-this-secret-key-in-production", alias="SECRET_KEY")
     admin_session_minutes: int = Field(default=480, alias="ADMIN_SESSION_MINUTES")
     admin_login_rate_limit_per_minute: int = Field(default=6, alias="ADMIN_LOGIN_RATE_LIMIT_PER_MINUTE")
-    upload_max_bytes: int = Field(default=5 * 1024 * 1024, alias="UPLOAD_MAX_BYTES")
-    upload_storage: str = Field(default="database", alias="UPLOAD_STORAGE")
-    upload_dir: str = Field(default=str(BASE_DIR / "static" / "uploads"), alias="UPLOAD_DIR")
-    upload_url_prefix: str = Field(default="/static/uploads", alias="UPLOAD_URL_PREFIX")
-    gcs_bucket_name: str | None = Field(default=None, alias="GCS_BUCKET_NAME")
+    admin_emails: str = Field(default="admin@oshin.vn,danh24081003@gmail.com", alias="ADMIN_EMAILS")
     google_client_id: str | None = Field(default=None, alias="GOOGLE_CLIENT_ID")
     google_client_secret: str | None = Field(default=None, alias="GOOGLE_CLIENT_SECRET")
     google_redirect_uri: str | None = Field(default=None, alias="GOOGLE_REDIRECT_URI")
+    upload_max_bytes: int = Field(default=5 * 1024 * 1024, alias="UPLOAD_MAX_BYTES")
+    upload_storage: str = Field(default="local", alias="UPLOAD_STORAGE")
+    upload_dir: str = Field(default=str(BASE_DIR / "static" / "uploads"), alias="UPLOAD_DIR")
+    upload_url_prefix: str = Field(default="/static/uploads", alias="UPLOAD_URL_PREFIX")
+    gcs_bucket_name: str | None = Field(default=None, alias="GCS_BUCKET_NAME")
 
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -59,6 +60,10 @@ class Settings(BaseSettings):
             if dynamic not in origins:
                 origins.append(dynamic)
         return origins
+
+    @property
+    def admin_email_list(self) -> List[str]:
+        return [item.strip().lower() for item in self.admin_emails.split(",") if item.strip()]
 
 
 @lru_cache

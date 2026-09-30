@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+from functools import lru_cache
 from typing import Any, Iterable
 
 from anyio import to_thread
@@ -431,11 +432,6 @@ class AIService:
             has_phone=has_phone,
         )
 
-        # Fast-path for simple greetings and thank-you messages without images
-        lowered_msg = (user_message or "").lower().strip()
-        if not image_bytes_list and lowered_msg in {"hi", "hello", "halo", "alo", "chào", "xin chào", "xin chao", "chào em", "chao em", "cảm ơn", "cam on", "thank you", "thanks", "tks"}:
-            return fallback_text, quick_actions
-
         if not self.client:
             logger.error("AI chat request failed because no AI client is configured")
             raise AIServiceError(
@@ -505,45 +501,7 @@ class AIService:
         logger.error("AI provider returned an empty response")
         raise AIServiceError("AI_PROVIDER_ERROR", GENERAL_AI_MESSAGE)
 
-        try:
-            response = await to_thread.run_sync(
-                lambda: self.client.models.generate_content(
-                    model=self.active_model,
-                    contents=contents,
-                    config=config,
-                )
-            )
-            reply = getattr(response, "text", None)
-            if reply and reply.strip():
-                return reply.strip(), quick_actions
-        except Exception as err:
-            text = str(err).lower()
-            if "deadline" in text or "timeout" in text or "timed out" in text:
-                code = "AI_TIMEOUT"
-            elif "connecterror" in text or "socket" in text or "network" in text or "connection" in text:
-                code = "AI_PROVIDER_ERROR"
-            elif "credential" in text or "unauthorized" in text or "403" in text or "401" in text:
-                code = "AI_AUTH_ERROR"
-            else:
-                code = "AI_PROVIDER_ERROR"
-            logger.exception("Vertex AI chat request failed")
-            raise AIServiceError(
-                code,
-                "Trợ lý đang tạm thời gián đoạn. Anh/chị vui lòng thử lại sau hoặc liên hệ 0901 040 484.",
-            ) from err
-
-        logger.error("AI provider returned an empty response")
-        raise AIServiceError(
-            "AI_PROVIDER_ERROR",
-            "Trợ lý đang tạm thời gián đoạn. Anh/chị vui lòng thử lại sau hoặc liên hệ 0901 040 484.",
-        )
-
-
-from functools import lru_cache
-from app.services.knowledge_service import get_knowledge_service
-
 
 @lru_cache
 def get_ai_service() -> AIService:
-    return AIService(get_knowledge_service())
-
+    return AIService()
